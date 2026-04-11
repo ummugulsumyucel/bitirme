@@ -4,6 +4,7 @@ import 'profile_screen.dart';
 import 'notes_feed_screen.dart';
 import 'events_screen.dart';
 
+import '../navigation/shell_tab_sync.dart';
 import '../services/session_service.dart';
 
 class EventDetailScreen extends StatelessWidget {
@@ -388,7 +389,7 @@ class EventDetailScreen extends StatelessWidget {
                 icon: Icons.home,
                 label: 'Ana Sayfa',
                 isActive: false,
-                onTap: () {},
+                onTap: () => popToShellHome(context),
               ),
               _buildNavItem(
                 icon: Icons.calendar_today,

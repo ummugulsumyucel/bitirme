@@ -1,47 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'screens/suggestion_complaint_screen.dart';
+import 'screens/main_shell.dart';
+import 'services/auth_service.dart';
+import 'theme/uni_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await AuthService().initialize();
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.light;
+
+  void _toggleTheme() {
+    setState(() {
+      _themeMode =
+          _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'UniConnect',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E3A8A)),
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-        textTheme: const TextTheme(
-          displayLarge: TextStyle(fontFamily: 'Roboto'),
-          displayMedium: TextStyle(fontFamily: 'Roboto'),
-          displaySmall: TextStyle(fontFamily: 'Roboto'),
-          headlineLarge: TextStyle(fontFamily: 'Roboto'),
-          headlineMedium: TextStyle(fontFamily: 'Roboto'),
-          headlineSmall: TextStyle(fontFamily: 'Roboto'),
-          titleLarge: TextStyle(fontFamily: 'Roboto'),
-          titleMedium: TextStyle(fontFamily: 'Roboto'),
-          titleSmall: TextStyle(fontFamily: 'Roboto'),
-          bodyLarge: TextStyle(fontFamily: 'Roboto'),
-          bodyMedium: TextStyle(fontFamily: 'Roboto'),
-          bodySmall: TextStyle(fontFamily: 'Roboto'),
-          labelLarge: TextStyle(fontFamily: 'Roboto'),
-          labelMedium: TextStyle(fontFamily: 'Roboto'),
-          labelSmall: TextStyle(fontFamily: 'Roboto'),
-        ),
+      themeMode: _themeMode,
+      theme: uniTheme(Brightness.light),
+      darkTheme: uniTheme(Brightness.dark),
+      home: MainShell(
+        themeMode: _themeMode,
+        onToggleTheme: _toggleTheme,
       ),
-      home: const SuggestionComplaintScreen(),
     );
   }
 }

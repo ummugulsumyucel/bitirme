@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'profile_screen.dart';
-import 'notes_feed_screen.dart';
-import 'events_screen.dart';
 
 class SuggestionComplaintScreen extends StatefulWidget {
   const SuggestionComplaintScreen({super.key});
@@ -28,60 +25,19 @@ class _SuggestionComplaintScreenState extends State<SuggestionComplaintScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        title: const Text('Öneri / Şikayet'),
+      ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header Bar
-            Container(
-              height: 60,
-              color: const Color(0xFF1E3A8A),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.school, color: Colors.white, size: 28),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'UniConnect',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.dark_mode_outlined,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {},
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.menu, color: Colors.white),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+        child: SingleChildScrollView(
+          child: Container(
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
             ),
-            // Main Content
-            Expanded(
-              child: SingleChildScrollView(
-                child: Container(
-                  margin: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
+            padding: const EdgeInsets.all(20),
+            child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Heading
@@ -359,53 +315,6 @@ class _SuggestionComplaintScreenState extends State<SuggestionComplaintScreen> {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-      // Bottom Navigation Bar
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Container(
-            height: 70,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(Icons.home, 'Ana Sayfa', false, () {}),
-                _buildNavItem(Icons.calendar_today, 'Etkinlikler', false, () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const EventsScreen()),
-                  );
-                }),
-                _buildNavItemWithPlus('Profilim', false, () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                  );
-                }),
-                _buildNavItem(Icons.campaign, 'İlanlar', false, () {}),
-                _buildNavItem(Icons.menu_book_outlined, 'Notlar', false, () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const NotesFeedScreen()),
-                  );
-                }),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -457,95 +366,4 @@ class _SuggestionComplaintScreenState extends State<SuggestionComplaintScreen> {
     );
   }
 
-  Widget _buildNavItem(
-    IconData icon,
-    String label,
-    bool isActive,
-    VoidCallback onTap,
-  ) {
-    return Expanded(
-      child: InkWell(
-        onTap: () {
-          if (label == 'Profil' && !isActive) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
-            );
-          } else {
-            onTap();
-          }
-        },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: isActive ? 50 : 40,
-              height: isActive ? 50 : 40,
-              decoration: isActive
-                  ? BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF1E3A8A),
-                    )
-                  : null,
-              child: Icon(
-                icon,
-                color: isActive ? Colors.white : const Color(0xFF666666),
-                size: isActive ? 28 : 24,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: isActive
-                    ? const Color(0xFF1E3A8A)
-                    : const Color(0xFF666666),
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItemWithPlus(
-    String label,
-    bool isActive,
-    VoidCallback onTap,
-  ) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF5A7FCF).withOpacity(0.2),
-              ),
-              child: const Icon(
-                Icons.person,
-                color: Color(0xFF1E3A8A),
-                size: 26,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF1E3A8A),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

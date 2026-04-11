@@ -1,11 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
+import '../navigation/shell_tab_sync.dart';
 import 'profile_screen.dart';
 import 'events_screen.dart';
 import 'note_detail_screen.dart';
 
 class NotesFeedScreen extends StatefulWidget {
-  const NotesFeedScreen({super.key});
+  final bool embeddedInShell;
+
+  const NotesFeedScreen({super.key, this.embeddedInShell = false});
 
   @override
   State<NotesFeedScreen> createState() => _NotesFeedScreenState();
@@ -26,30 +30,37 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scroll = SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTopFilters(),
+            const SizedBox(height: 16),
+            _buildCategoryTabs(),
+            const SizedBox(height: 16),
+            _buildNotesList(context),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+
+    if (widget.embeddedInShell) {
+      return ColoredBox(
+        color: const Color(0xFFF5F5F5),
+        child: SizedBox.expand(child: scroll),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         child: Column(
           children: [
             _buildHeader(context),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTopFilters(),
-                      const SizedBox(height: 16),
-                      _buildCategoryTabs(),
-                      const SizedBox(height: 16),
-                      _buildNotesList(context),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            Expanded(child: scroll),
           ],
         ),
       ),
@@ -609,7 +620,7 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
                 icon: Icons.home,
                 label: 'Ana Sayfa',
                 isActive: false,
-                onTap: () {},
+                onTap: () => popToShellHome(context),
               ),
               _buildNavItem(
                 icon: Icons.calendar_today,

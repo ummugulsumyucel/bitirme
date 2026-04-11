@@ -1,12 +1,16 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+
+import '../navigation/shell_tab_sync.dart';
 import 'profile_screen.dart';
 import 'notes_feed_screen.dart';
 import 'event_detail_screen.dart';
 import 'new_event_screen.dart';
 
 class EventsScreen extends StatefulWidget {
-  const EventsScreen({super.key});
+  final bool embeddedInShell;
+
+  const EventsScreen({super.key, this.embeddedInShell = false});
 
   @override
   State<EventsScreen> createState() => _EventsScreenState();
@@ -127,30 +131,37 @@ class _EventsScreenState extends State<EventsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scroll = SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSearchFilters(),
+            const SizedBox(height: 16),
+            _buildAddEventButton(context),
+            const SizedBox(height: 16),
+            _buildEventsList(context),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+
+    if (widget.embeddedInShell) {
+      return ColoredBox(
+        color: const Color(0xFFF5F5F5),
+        child: SizedBox.expand(child: scroll),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         child: Column(
           children: [
             _buildHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSearchFilters(),
-                      const SizedBox(height: 16),
-                      _buildAddEventButton(context),
-                      const SizedBox(height: 16),
-                      _buildEventsList(context),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            Expanded(child: scroll),
           ],
         ),
       ),
@@ -739,7 +750,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 icon: Icons.home,
                 label: 'Ana Sayfa',
                 isActive: false,
-                onTap: () {},
+                onTap: () => popToShellHome(context),
               ),
               _buildNavItem(
                 icon: Icons.calendar_today,

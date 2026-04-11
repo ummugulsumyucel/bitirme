@@ -3,17 +3,23 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../navigation/shell_tab_sync.dart';
+import '../services/auth_service.dart';
 import '../services/profile_photo_service.dart';
 import '../services/session_service.dart';
 import 'edit_profile_screen.dart';
 import 'events_screen.dart';
+import 'login_page.dart';
 import 'new_listing_screen.dart';
 import 'new_note_screen.dart';
 import 'notes_feed_screen.dart';
+import 'register_page.dart';
 import 'suggestion_complaint_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final bool embeddedInShell;
+
+  const ProfileScreen({super.key, this.embeddedInShell = false});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -27,14 +33,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _bootstrap();
+    if (AuthService().isLoggedIn) {
+      _bootstrap();
+    } else {
+      _loadingSession = false;
+    }
   }
 
   Future<void> _bootstrap() async {
     setState(() => _loadingSession = true);
     String? id;
     try {
-      id = await SessionService.ensureUserDocId();
+      id = await SessionService.getUserDocId();
     } catch (e, st) {
       debugPrint('ProfileScreen._bootstrap: $e\n$st');
       id = null;
@@ -118,87 +128,187 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Widget _buildAuthRequiredGate(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.lock_person_rounded,
+                size: 80,
+                color: scheme.primary.withValues(alpha: 0.85),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Profil ve kişisel alan',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: scheme.onSurface,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'İlanlarını, notlarını ve etkinlik özetini görmek için giriş yap veya yeni hesap oluştur.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: scheme.onSurfaceVariant,
+                  height: 1.45,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    await Navigator.push<void>(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const LoginPage(),
+                      ),
+                    );
+                    if (!mounted) return;
+                    if (AuthService().isLoggedIn) await _bootstrap();
+                    if (mounted) setState(() {});
+                  },
+                  icon: const Icon(Icons.login_rounded),
+                  label: const Text('Giriş Yap'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await Navigator.push<void>(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const RegisterPage(),
+                      ),
+                    );
+                    if (!mounted) return;
+                    if (AuthService().isLoggedIn) await _bootstrap();
+                    if (mounted) setState(() {});
+                  },
+                  icon: const Icon(Icons.person_add_outlined),
+                  label: const Text('Kayıt Ol'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (!AuthService().isLoggedIn) {
+      final gate = _buildAuthRequiredGate(context);
+      if (widget.embeddedInShell) {
+        return ColoredBox(
+          color: Theme.of(context).colorScheme.surface,
+          child: SizedBox.expand(child: gate),
+        );
+      }
+      return Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        appBar: AppBar(title: const Text('Profilim')),
+        body: gate,
+        bottomNavigationBar: _buildBottomNavBar(context),
+      );
+    }
+
+    final inner = _loadingSession
+        ? const Center(child: CircularProgressIndicator())
+        : _userDocId == null
+            ? _buildSetupPrompt()
+            : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(_userDocId)
+                    .snapshots(),
+                builder: (context, snap) {
+                  if (snap.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'Profil verisi alınamadı:\n${snap.error}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  if (snap.connectionState == ConnectionState.waiting &&
+                      !snap.hasData) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  final userData = snap.data?.data() ?? {};
+                  return SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 16),
+                          _buildProfileCard(userData),
+                          const SizedBox(height: 12),
+                          _buildPersonalInfoCard(userData),
+                          const SizedBox(height: 12),
+                          _buildMyEventsSection(_userDocId!),
+                          const SizedBox(height: 12),
+                          _buildMyListingsSection(_userDocId!),
+                          const SizedBox(height: 12),
+                          _buildMyNotesSection(_userDocId!),
+                          const SizedBox(height: 12),
+                          _buildSavedNotesSection(_userDocId!),
+                          const SizedBox(height: 16),
+                          _buildPrimaryButton(
+                            'Şikayet / Öneri Ekle',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const SuggestionComplaintScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+
+    if (widget.embeddedInShell) {
+      return ColoredBox(
+        color: Theme.of(context).colorScheme.surface,
+        child: SizedBox.expand(child: inner),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         child: Column(
           children: [
             _buildHeader(),
-            Expanded(
-              child: _loadingSession
-                  ? const Center(child: CircularProgressIndicator())
-                  : _userDocId == null
-                      ? _buildSetupPrompt()
-                      : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                          stream: FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(_userDocId)
-                              .snapshots(),
-                          builder: (context, snap) {
-                            if (snap.hasError) {
-                              return Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24),
-                                  child: Text(
-                                    'Profil verisi alınamadı:\n${snap.error}',
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      color: Colors.redAccent,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
-                            if (snap.connectionState ==
-                                    ConnectionState.waiting &&
-                                !snap.hasData) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-                            final userData = snap.data?.data() ?? {};
-                            return SingleChildScrollView(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
-                                child: Column(
-                                  children: [
-                                    const SizedBox(height: 16),
-                                    _buildProfileCard(userData),
-                                    const SizedBox(height: 12),
-                                    _buildPersonalInfoCard(userData),
-                                    const SizedBox(height: 12),
-                                    _buildMyEventsSection(_userDocId!),
-                                    const SizedBox(height: 12),
-                                    _buildMyListingsSection(_userDocId!),
-                                    const SizedBox(height: 12),
-                                    _buildMyNotesSection(_userDocId!),
-                                    const SizedBox(height: 12),
-                                    _buildSavedNotesSection(_userDocId!),
-                                    const SizedBox(height: 16),
-                                    _buildPrimaryButton(
-                                      'Şikayet / Öneri Ekle',
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                const SuggestionComplaintScreen(),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                    const SizedBox(height: 16),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-            ),
+            Expanded(child: inner),
           ],
         ),
       ),
@@ -1026,7 +1136,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: Icons.home,
                 label: 'Ana Sayfa',
                 isActive: false,
-                onTap: () {},
+                onTap: () => popToShellHome(context),
               ),
               _buildNavItem(
                 icon: Icons.calendar_today,
