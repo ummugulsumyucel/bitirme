@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../services/session_service.dart';
@@ -26,25 +27,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _loadExisting() async {
     try {
-      final docId = await SessionService.ensureUserDocId();
-      if (docId != null && mounted) {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(docId)
-            .get();
-        final d = doc.data();
-        if (d != null && mounted) {
-          _nameController.text = (d['fullName'] as String?) ?? '';
-          _departmentController.text = (d['department'] as String?) ?? '';
-          _classController.text = (d['grade'] as String?) ?? '';
-          _emailController.text = (d['email'] as String?) ?? '';
-        }
-      }
-      if (mounted && _nameController.text.isEmpty) {
-        _nameController.text = 'Gülşüm Yücel';
-        _departmentController.text = 'Bilgisayar Mühendisliği';
-        _classController.text = '4. Sınıf';
-        _emailController.text = 'gulsum.yucel@klu.edu.tr';
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+
+      await SessionService.setUserDocId(uid);
+      final doc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final d = doc.data();
+      if (d != null && mounted) {
+        _nameController.text = (d['fullName'] as String?) ?? '';
+        _departmentController.text = (d['department'] as String?) ?? '';
+        _classController.text = (d['grade'] as String?) ?? '';
+        _emailController.text =
+            (d['email'] as String?) ??
+                FirebaseAuth.instance.currentUser?.email ??
+                '';
+      } else if (mounted) {
+        _emailController.text =
+            FirebaseAuth.instance.currentUser?.email ?? '';
+        _nameController.text =
+            FirebaseAuth.instance.currentUser?.displayName ?? '';
       }
     } finally {
       if (mounted) {
@@ -291,9 +293,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      final userDocId = email.replaceAll('.', '_');
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profili kaydetmek için önce giriş yapmalısınız.'),
+          ),
+        );
+        return;
+      }
 
-      await FirebaseFirestore.instance.collection('users').doc(userDocId).set({
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'fullName': fullName,
         'department': department,
         'grade': grade,
@@ -304,7 +315,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      await SessionService.setUserDocId(userDocId);
+      await SessionService.setUserDocId(uid);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

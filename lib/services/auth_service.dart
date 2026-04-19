@@ -1,85 +1,237 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'session_service.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
-  bool _isLoggedIn = false;
-  String? _currentUserEmail;
-  String? _currentUserName;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  bool get isLoggedIn => _isLoggedIn;
-  String? get currentUserEmail => _currentUserEmail;
-  String? get currentUserName => _currentUserName;
+  String? _cachedDisplayName;
 
-  // Test kullanıcısı bilgileri
-  static const String testEmail = 'test@university.edu';
-  static const String testPassword = 'test123';
-  static const String testName = 'Test Kullanıcı';
+  bool get isLoggedIn => _auth.currentUser != null;
+
+  String? get currentUserEmail => _auth.currentUser?.email;
+
+  String? get currentUserName {
+    final u = _auth.currentUser;
+    final fromAuth = u?.displayName?.trim();
+    if (fromAuth != null && fromAuth.isNotEmpty) return fromAuth;
+    final c = _cachedDisplayName?.trim();
+    if (c != null && c.isNotEmpty) return c;
+    return null;
+  }
 
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    _currentUserEmail = prefs.getString('userEmail');
-    _currentUserName = prefs.getString('userName');
-  }
-
-  Future<bool> login(String email, String password) async {
-    // Test kullanıcısı kontrolü
-    if (email == testEmail && password == testPassword) {
-      _isLoggedIn = true;
-      _currentUserEmail = email;
-      _currentUserName = testName;
-      
+    final user = _auth.currentUser;
+    if (user != null) {
+      await SessionService.setUserDocId(user.uid);
+      // Firestore sync'i arka planda yap, initialize'ı bloklamasın
+      _syncUserProfileFromFirestore(user).catchError((e) {
+        debugPrint('AuthService.initialize sync (non-fatal): $e');
+      });
+    } else {
+      _cachedDisplayName = null;
+      await SessionService.clearUserDocId();
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('userEmail', email);
-      await prefs.setString('userName', testName);
-      return true;
+      await prefs.remove('userEmail');
+      await prefs.remove('userName');
     }
-
-    // Diğer kullanıcılar için (kayıt olanlar)
-    // Şimdilik herhangi bir email/şifre ile giriş yapılabilir
-    _isLoggedIn = true;
-    _currentUserEmail = email;
-    _currentUserName = email.split('@')[0]; // Email'den isim çıkar
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('userEmail', email);
-    await prefs.setString('userName', _currentUserName ?? 'Kullanıcı');
-    
-    return true;
   }
 
-  Future<bool> register(String name, String email, String password) async {
-    // Kayıt işlemi - şimdilik her zaman başarılı
-    _isLoggedIn = true;
-    _currentUserEmail = email;
-    _currentUserName = name;
-    
+  Future<void> _persistLocalCache(User user) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('userEmail', email);
-    await prefs.setString('userName', name);
-    
-    return true;
+    final email = user.email;
+    if (email != null && email.isNotEmpty) {
+      await prefs.setString('userEmail', email);
+    }
+    final name = currentUserName;
+    if (name != null && name.isNotEmpty) {
+      await prefs.setString('userName', name);
+    }
+  }
+
+  /// Firestore ve (gerekirse) Auth displayName ile önbelleği günceller.
+  Future<void> _syncUserProfileFromFirestore(User user) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      final fullName = (doc.data()?['fullName'] as String?)?.trim();
+      if (fullName != null && fullName.isNotEmpty) {
+        _cachedDisplayName = fullName;
+        final dn = user.displayName?.trim();
+        if (dn == null || dn.isEmpty) {
+          await user.updateDisplayName(fullName);
+          await user.reload();
+        }
+      } else {
+        _cachedDisplayName = user.displayName?.trim();
+      }
+    } catch (e, st) {
+      debugPrint('AuthService._syncUserProfileFromFirestore: $e\n$st');
+      _cachedDisplayName = user.displayName?.trim();
+    }
+    final u2 = _auth.currentUser;
+    if (u2 != null) await _persistLocalCache(u2);
+  }
+
+  String _mapFirestoreError(FirebaseException e) {
+    switch (e.code) {
+      case 'permission-denied':
+        return 'Profil verisi Firestore\'a yazılamadı (izin reddedildi). '
+            'Firebase Console → Firestore → Kurallar bölümünde giriş yapmış '
+            'kullanıcının kendi users/{uid} belgesine yazmasına izin verin.';
+      case 'unavailable':
+        return 'Firestore şu an kullanılamıyor. Bağlantınızı deneyip tekrar deneyin.';
+      default:
+        return 'Profil verisi kaydedilemedi: ${e.message ?? e.code}';
+    }
+  }
+
+  String _mapFirebaseAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'E-posta veya şifre hatalı.';
+      case 'invalid-email':
+        return 'Geçersiz e-posta adresi.';
+      case 'user-disabled':
+        return 'Bu hesap devre dışı bırakılmış.';
+      case 'email-already-in-use':
+        return 'Bu e-posta ile zaten bir hesap var.';
+      case 'weak-password':
+        return 'Şifre çok zayıf. En az 8 karakter kullanın.';
+      case 'network-request-failed':
+        return 'Ağ hatası. Bağlantınızı kontrol edin.';
+      case 'too-many-requests':
+        return 'Çok fazla deneme yapıldı. Lütfen bir süre sonra tekrar deneyin.';
+      default:
+        final m = e.message?.trim();
+        if (m != null && m.isNotEmpty) return m;
+        return 'Bir hata oluştu (${e.code}).';
+    }
+  }
+
+  /// Başarılıysa `null`, aksi halde kullanıcıya gösterilecek mesaj.
+  Future<String?> login(String email, String password) async {
+    final trimmedEmail = email.trim().toLowerCase();
+    try {
+      final cred = await _auth.signInWithEmailAndPassword(
+        email: trimmedEmail,
+        password: password,
+      );
+      final user = cred.user;
+      if (user == null) return 'Giriş tamamlanamadı.';
+
+      await SessionService.setUserDocId(user.uid);
+      // Firestore sync'i arka planda yap, girişi bloklamasın
+      _syncUserProfileFromFirestore(user).catchError((e) {
+        debugPrint('AuthService.login sync (non-fatal): $e');
+      });
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return _mapFirebaseAuthError(e);
+    } catch (e, st) {
+      debugPrint('AuthService.login: $e\n$st');
+      return 'Giriş sırasında beklenmeyen bir hata oluştu.';
+    }
+  }
+
+  /// Firebase Auth şifre sıfırlama e-postası. Başarılıysa `null`.
+  Future<String?> sendPasswordResetEmail(String email) async {
+    final trimmedEmail = email.trim().toLowerCase();
+    if (trimmedEmail.isEmpty) {
+      return 'E-posta adresi gerekli.';
+    }
+    try {
+      await _auth.sendPasswordResetEmail(email: trimmedEmail);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return _mapFirebaseAuthError(e);
+    } catch (e, st) {
+      debugPrint('AuthService.sendPasswordResetEmail: $e\n$st');
+      return 'Şifre sıfırlama e-postası gönderilemedi.';
+    }
+  }
+
+  /// Başarılıysa `null`, aksi halde kullanıcıya gösterilecek mesaj.
+  Future<String?> register(
+    String name,
+    String email,
+    String password, {
+    required String department,
+    required String grade,
+  }) async {
+    final trimmedEmail = email.trim().toLowerCase();
+    final trimmedName = name.trim();
+    User? created;
+    try {
+      final cred = await _auth.createUserWithEmailAndPassword(
+        email: trimmedEmail,
+        password: password,
+      );
+      created = cred.user;
+      if (created == null) return 'Kayıt tamamlanamadı.';
+
+      final uid = created.uid;
+
+      // Önce Firestore (displayName güncellemesi bazen hata verebiliyor; veri kaybı olmasın).
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'fullName': trimmedName,
+          'email': trimmedEmail,
+          'department': department,
+          'grade': grade,
+          'role': 'student',
+          'isActive': true,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } on FirebaseException catch (e, st) {
+        debugPrint('AuthService.register Firestore: $e\n$st');
+        try {
+          await created.delete();
+        } catch (delErr, delSt) {
+          debugPrint('AuthService.register rollback delete: $delErr\n$delSt');
+        }
+        await _auth.signOut();
+        return _mapFirestoreError(e);
+      }
+
+      try {
+        await created.updateDisplayName(trimmedName);
+        await created.reload();
+      } catch (e, st) {
+        debugPrint('AuthService.register displayName (non-fatal): $e\n$st');
+      }
+
+      final live = _auth.currentUser ?? created;
+      _cachedDisplayName = trimmedName;
+      await SessionService.setUserDocId(uid);
+      await _persistLocalCache(live);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return _mapFirebaseAuthError(e);
+    } catch (e, st) {
+      debugPrint('AuthService.register: $e\n$st');
+      return 'Kayıt sırasında beklenmeyen bir hata oluştu.';
+    }
   }
 
   Future<void> logout() async {
-    _isLoggedIn = false;
-    _currentUserEmail = null;
-    _currentUserName = null;
-    
+    await _auth.signOut();
+    _cachedDisplayName = null;
+    await SessionService.clearUserDocId();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('isLoggedIn');
     await prefs.remove('userEmail');
     await prefs.remove('userName');
   }
 }
-
-
-
-
-

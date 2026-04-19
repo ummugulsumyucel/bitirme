@@ -18,15 +18,48 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscurePassword = true;
   String? _selectedDepartment;
   String? _selectedClass;
+  bool _submitting = false;
+
+  Future<void> _submitRegister() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _submitting = true);
+    final err = await AuthService().register(
+      _nameController.text.trim(),
+      _emailController.text.trim(),
+      _passwordController.text,
+      department: _selectedDepartment!,
+      grade: _selectedClass!,
+    );
+    if (!mounted) return;
+    setState(() => _submitting = false);
+    if (err == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 10),
+              Text('Hesabınız başarıyla oluşturuldu!'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+      finishLoginOrRegisterFlow(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 800;
-    
+
     return Scaffold(
-      body: isSmallScreen
-          ? _buildMobileLayout()
-          : _buildDesktopLayout(),
+      body: isSmallScreen ? _buildMobileLayout() : _buildDesktopLayout(),
     );
   }
 
@@ -52,12 +85,19 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 8),
               const Text(
                 'Kampüs hayatına katılmak için hesabınızı oluşturun',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Hesabınız Firebase Authentication ile oluşturulur; ad, bölüm ve '
+                'sınıf bilgileriniz Firestore\'da profilinize kaydedilir.',
                 style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
+                  fontSize: 11,
+                  height: 1.35,
+                  color: Colors.grey.shade700,
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 22),
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -150,22 +190,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   prefixIcon: const Icon(Icons.class_),
                 ),
                 items: const [
-                  DropdownMenuItem(
-                    value: '1. Sınıf',
-                    child: Text('1. Sınıf'),
-                  ),
-                  DropdownMenuItem(
-                    value: '2. Sınıf',
-                    child: Text('2. Sınıf'),
-                  ),
-                  DropdownMenuItem(
-                    value: '3. Sınıf',
-                    child: Text('3. Sınıf'),
-                  ),
-                  DropdownMenuItem(
-                    value: '4. Sınıf',
-                    child: Text('4. Sınıf'),
-                  ),
+                  DropdownMenuItem(value: '1. Sınıf', child: Text('1. Sınıf')),
+                  DropdownMenuItem(value: '2. Sınıf', child: Text('2. Sınıf')),
+                  DropdownMenuItem(value: '3. Sınıf', child: Text('3. Sınıf')),
+                  DropdownMenuItem(value: '4. Sınıf', child: Text('4. Sınıf')),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -191,7 +219,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                     ),
                     onPressed: () {
                       setState(() {
@@ -215,20 +245,7 @@ class _RegisterPageState extends State<RegisterPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () async {
-                    if (_formKey.currentState!.validate()) {
-                      final authService = AuthService();
-                      final success = await authService.register(
-                        _nameController.text,
-                        _emailController.text,
-                        _passwordController.text,
-                      );
-                      
-                      if (success && context.mounted) {
-                        finishLoginOrRegisterFlow(context);
-                      }
-                    }
-                  },
+                  onPressed: _submitting ? null : () => _submitRegister(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5A7FCF),
                     foregroundColor: Colors.white,
@@ -237,13 +254,22 @@ class _RegisterPageState extends State<RegisterPage> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
-                    'Hesap Oluştur',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: _submitting
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Hesap Oluştur',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -284,15 +310,9 @@ class _RegisterPageState extends State<RegisterPage> {
         Expanded(
           flex: 2,
           child: Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF1E3A8A),
-            ),
+            decoration: const BoxDecoration(color: Color(0xFF1E3A8A)),
             child: const Center(
-              child: Icon(
-                Icons.school,
-                size: 150,
-                color: Colors.white,
-              ),
+              child: Icon(Icons.school, size: 150, color: Colors.white),
             ),
           ),
         ),
@@ -322,12 +342,18 @@ class _RegisterPageState extends State<RegisterPage> {
                       const SizedBox(height: 8),
                       const Text(
                         'Kampüs hayatına katılmak için hesabınızı oluşturun',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Kayıt Firebase Authentication + Firestore ile yapılır.',
                         style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
+                          fontSize: 12,
+                          height: 1.35,
+                          color: Colors.grey.shade700,
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 32),
                       // İki sütunlu form
                       LayoutBuilder(
                         builder: (context, constraints) {
@@ -378,19 +404,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () async {
-                            if (_formKey.currentState!.validate()) {
-                              final authService = AuthService();
-                              final ok = await authService.register(
-                                _nameController.text,
-                                _emailController.text,
-                                _passwordController.text,
-                              );
-                              if (ok && context.mounted) {
-                                finishLoginOrRegisterFlow(context);
-                              }
-                            }
-                          },
+                          onPressed: _submitting
+                              ? null
+                              : () => _submitRegister(),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1E3A8A),
                             foregroundColor: Colors.white,
@@ -399,13 +415,22 @@ class _RegisterPageState extends State<RegisterPage> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text(
-                            'Hesap Oluştur',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: _submitting
+                              ? const SizedBox(
+                                  height: 22,
+                                  width: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Hesap Oluştur',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -449,9 +474,7 @@ class _RegisterPageState extends State<RegisterPage> {
       decoration: InputDecoration(
         labelText: 'Ad Soyad',
         hintText: 'Adınız ve soyadınızı giriniz',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         prefixIcon: const Icon(Icons.person),
       ),
       validator: (value) {
@@ -469,9 +492,7 @@ class _RegisterPageState extends State<RegisterPage> {
       decoration: InputDecoration(
         labelText: 'E-posta',
         hintText: 'ornek@universite.edu.tr',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         prefixIcon: const Icon(Icons.email),
       ),
       keyboardType: TextInputType.emailAddress,
@@ -493,9 +514,7 @@ class _RegisterPageState extends State<RegisterPage> {
       decoration: InputDecoration(
         labelText: 'Bölüm',
         hintText: 'Bölümünüzü seçiniz',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         prefixIcon: const Icon(Icons.school),
       ),
       items: const [
@@ -536,28 +555,14 @@ class _RegisterPageState extends State<RegisterPage> {
       decoration: InputDecoration(
         labelText: 'Sınıf',
         hintText: 'Sınıfınızı seçiniz',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         prefixIcon: const Icon(Icons.class_),
       ),
       items: const [
-        DropdownMenuItem(
-          value: '1. Sınıf',
-          child: Text('1. Sınıf'),
-        ),
-        DropdownMenuItem(
-          value: '2. Sınıf',
-          child: Text('2. Sınıf'),
-        ),
-        DropdownMenuItem(
-          value: '3. Sınıf',
-          child: Text('3. Sınıf'),
-        ),
-        DropdownMenuItem(
-          value: '4. Sınıf',
-          child: Text('4. Sınıf'),
-        ),
+        DropdownMenuItem(value: '1. Sınıf', child: Text('1. Sınıf')),
+        DropdownMenuItem(value: '2. Sınıf', child: Text('2. Sınıf')),
+        DropdownMenuItem(value: '3. Sınıf', child: Text('3. Sınıf')),
+        DropdownMenuItem(value: '4. Sınıf', child: Text('4. Sınıf')),
       ],
       onChanged: (value) {
         setState(() {
@@ -579,9 +584,7 @@ class _RegisterPageState extends State<RegisterPage> {
       decoration: InputDecoration(
         labelText: 'Şifre',
         hintText: 'En az 8 karakter',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         prefixIcon: const Icon(Icons.lock),
         suffixIcon: IconButton(
           icon: Icon(

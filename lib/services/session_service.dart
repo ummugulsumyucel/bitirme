@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,30 +26,25 @@ class SessionService {
     }
   }
 
-  /// Kayıtlı oturum yoksa Firestore'daki kullanıcılardan birini bağlar.
-  /// orderBy + index sorunları olmaması için sorgu [limit] ile çekilip
-  /// [updatedAt] istemci tarafında sıralanır.
+  static Future<void> clearUserDocId() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.remove(_kUserDocIdKey);
+    } catch (e, st) {
+      debugPrint('SessionService.clearUserDocId: $e\n$st');
+    }
+  }
+
+  /// Oturum açmış kullanıcı için Firestore belge kimliği (Firebase Auth `uid`).
+  /// Aksi halde kayıtlı tercih varsa onu döndürür.
   static Future<String?> ensureUserDocId() async {
     try {
-      String? id = await getUserDocId();
-      if (id != null && id.isNotEmpty) return id;
-
-      final snap =
-          await FirebaseFirestore.instance.collection('users').limit(50).get();
-      if (snap.docs.isEmpty) return null;
-
-      final sorted = [...snap.docs];
-      sorted.sort((a, b) {
-        final ta = a.data()['updatedAt'];
-        final tb = b.data()['updatedAt'];
-        final ma = ta is Timestamp ? ta.millisecondsSinceEpoch : 0;
-        final mb = tb is Timestamp ? tb.millisecondsSinceEpoch : 0;
-        return mb.compareTo(ma);
-      });
-
-      id = sorted.first.id;
-      await setUserDocId(id);
-      return id;
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null && uid.isNotEmpty) {
+        await setUserDocId(uid);
+        return uid;
+      }
+      return await getUserDocId();
     } catch (e, st) {
       debugPrint('SessionService.ensureUserDocId: $e\n$st');
       return null;

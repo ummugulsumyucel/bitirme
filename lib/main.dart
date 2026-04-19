@@ -1,5 +1,8 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
 import 'firebase_options.dart';
 import 'screens/main_shell.dart';
 import 'services/auth_service.dart';
@@ -23,6 +26,23 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.light;
+  StreamSubscription<User?>? _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _authSubscription =
+        FirebaseAuth.instance.authStateChanges().listen((_) async {
+      await AuthService().initialize();
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
 
   void _toggleTheme() {
     setState(() {

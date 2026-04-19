@@ -1,16 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../navigation/shell_tab_sync.dart';
-import 'profile_screen.dart';
-import 'notes_feed_screen.dart';
 import 'event_detail_screen.dart';
 import 'new_event_screen.dart';
 
 class EventsScreen extends StatefulWidget {
   final bool embeddedInShell;
+  final VoidCallback? onToggleTheme;
+  final bool isDarkMode;
 
-  const EventsScreen({super.key, this.embeddedInShell = false});
+  const EventsScreen({
+    super.key,
+    this.embeddedInShell = false,
+    this.onToggleTheme,
+    this.isDarkMode = false,
+  });
 
   @override
   State<EventsScreen> createState() => _EventsScreenState();
@@ -157,60 +161,20 @@ class _EventsScreenState extends State<EventsScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(child: scroll),
-          ],
-        ),
+      appBar: AppBar(
+        title: const Text('Etkinlikler'),
+        backgroundColor: const Color(0xFF1E3A8A),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      bottomNavigationBar: _buildBottomNavBar(context),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      height: 60,
-      color: const Color(0xFF1E3A8A),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.school, color: Colors.white, size: 28),
-              SizedBox(width: 8),
-              Text(
-                'UniConnect',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.dark_mode_outlined, color: Colors.white),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () {},
-              ),
-            ],
-          ),
-        ],
-      ),
+      body: scroll,
     );
   }
 
   Widget _buildSearchFilters() {
-    final categoryLabel =
-        _eventCategory == 'Tümü' ? 'Kategori Seç' : _eventCategory;
+    final categoryLabel = _eventCategory == 'Tümü'
+        ? 'Kategori Seç'
+        : _eventCategory;
     final timeLabel = _timeFilter == 'Tümü' ? 'Zaman' : _timeFilter;
 
     return Container(
@@ -354,8 +318,7 @@ class _EventsScreenState extends State<EventsScreen> {
                   onPressed: () => setState(() {}),
                   child: const Text(
                     'Ara',
-                    style:
-                        TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -386,7 +349,12 @@ class _EventsScreenState extends State<EventsScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const NewEventScreen()),
+            MaterialPageRoute(
+              builder: (_) => NewEventScreen(
+                onToggleTheme: widget.onToggleTheme,
+                isDarkMode: widget.isDarkMode,
+              ),
+            ),
           );
         },
       ),
@@ -395,9 +363,7 @@ class _EventsScreenState extends State<EventsScreen> {
 
   Widget _buildEventsList(BuildContext context) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('events')
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('events').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Text(
@@ -464,13 +430,19 @@ class _EventsScreenState extends State<EventsScreen> {
             final category = (data['category'] as String?)?.trim() ?? '';
 
             return Padding(
-              padding: EdgeInsets.only(bottom: index == docs.length - 1 ? 0 : 12),
+              padding: EdgeInsets.only(
+                bottom: index == docs.length - 1 ? 0 : 12,
+              ),
               child: _buildEventCard(
                 context: context,
                 eventId: docs[index].id,
                 title: (title == null || title.isEmpty) ? 'Baslik yok' : title,
-                date: (date == null || date.isEmpty) ? 'Tarih belirtilmedi' : date,
-                place: (place == null || place.isEmpty) ? 'Konum belirtilmedi' : place,
+                date: (date == null || date.isEmpty)
+                    ? 'Tarih belirtilmedi'
+                    : date,
+                place: (place == null || place.isEmpty)
+                    ? 'Konum belirtilmedi'
+                    : place,
                 time: (time == null || time.isEmpty) ? '--:--' : time,
                 label: label,
                 labelColor: _labelColor(label),
@@ -706,6 +678,8 @@ class _EventsScreenState extends State<EventsScreen> {
                             labelColor: labelColor,
                             background: background,
                             icon: icon,
+                            onToggleTheme: widget.onToggleTheme,
+                            isDarkMode: widget.isDarkMode,
                           ),
                         ),
                       );
@@ -724,155 +698,6 @@ class _EventsScreenState extends State<EventsScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          height: 70,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(
-                icon: Icons.home,
-                label: 'Ana Sayfa',
-                isActive: false,
-                onTap: () => popToShellHome(context),
-              ),
-              _buildNavItem(
-                icon: Icons.calendar_today,
-                label: 'Etkinlikler',
-                isActive: true,
-                onTap: () {},
-              ),
-              _buildNavItemWithPlus(
-                label: 'Profilim',
-                isActive: false,
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                  );
-                },
-              ),
-              _buildNavItem(
-                icon: Icons.campaign,
-                label: 'İlanlar',
-                isActive: false,
-                onTap: () {},
-              ),
-              _buildNavItem(
-                icon: Icons.menu_book_outlined,
-                label: 'Notlar',
-                isActive: false,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const NotesFeedScreen()),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: isActive ? 50 : 40,
-              height: isActive ? 50 : 40,
-              decoration: isActive
-                  ? BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF5A7FCF).withOpacity(0.2),
-                    )
-                  : null,
-              child: Icon(
-                icon,
-                color: isActive
-                    ? const Color(0xFF1E3A8A)
-                    : const Color(0xFF666666),
-                size: isActive ? 28 : 24,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: isActive
-                    ? const Color(0xFF1E3A8A)
-                    : const Color(0xFF666666),
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItemWithPlus({
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF5A7FCF).withOpacity(0.2),
-              ),
-              child: const Icon(
-                Icons.person,
-                color: Color(0xFF1E3A8A),
-                size: 26,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF1E3A8A),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

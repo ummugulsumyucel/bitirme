@@ -1,9 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../navigation/shell_tab_sync.dart';
-import 'profile_screen.dart';
-import 'events_screen.dart';
 import 'note_detail_screen.dart';
 
 class NotesFeedScreen extends StatefulWidget {
@@ -56,57 +53,13 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(child: scroll),
-          ],
-        ),
+      appBar: AppBar(
+        title: const Text('Notlar'),
+        backgroundColor: const Color(0xFF1E3A8A),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      bottomNavigationBar: _buildBottomNavBar(context),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      height: 60,
-      color: const Color(0xFF1E3A8A),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.school, color: Colors.white, size: 28),
-              SizedBox(width: 8),
-              Text(
-                'UniConnect',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.dark_mode_outlined,
-                  color: Colors.white,
-                ),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () {},
-              ),
-            ],
-          ),
-        ],
-      ),
+      body: scroll,
     );
   }
 
@@ -150,8 +103,9 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
             color: isActive ? const Color(0xFF1E3A8A) : Colors.white,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color:
-                  isActive ? const Color(0xFF1E3A8A) : const Color(0xFFE5E7EB),
+              color: isActive
+                  ? const Color(0xFF1E3A8A)
+                  : const Color(0xFFE5E7EB),
             ),
           ),
           child: Center(
@@ -196,8 +150,9 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
             color: isActive ? const Color(0xFF1E3A8A) : Colors.white,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color:
-                  isActive ? const Color(0xFF1E3A8A) : const Color(0xFFE5E7EB),
+              color: isActive
+                  ? const Color(0xFF1E3A8A)
+                  : const Color(0xFFE5E7EB),
             ),
           ),
           child: Row(
@@ -280,8 +235,7 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
 
   Widget _buildNotesList(BuildContext context) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream:
-          FirebaseFirestore.instance.collection('notes').snapshots(),
+      stream: FirebaseFirestore.instance.collection('notes').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Text(
@@ -291,10 +245,12 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: Padding(
-            padding: EdgeInsets.all(24),
-            child: CircularProgressIndicator(),
-          ));
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(),
+            ),
+          );
         }
 
         var docs = [...(snapshot.data?.docs ?? [])];
@@ -332,7 +288,8 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
             final title = (data['title'] as String?)?.trim() ?? 'Başlıksız';
             final course = (data['course'] as String?)?.trim() ?? '';
             final semester = (data['semester'] as String?)?.trim() ?? '';
-            final author = (data['uploaderName'] as String?)?.trim() ?? 'Öğrenci';
+            final author =
+                (data['uploaderName'] as String?)?.trim() ?? 'Öğrenci';
             final rating = (data['ratingAvg'] as num?)?.toDouble() ?? 0.0;
             final description = (data['description'] as String?)?.trim();
             final department = (data['department'] as String?)?.trim();
@@ -343,7 +300,9 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
             final tagColor = _tagColorForSemester(semester);
 
             return Padding(
-              padding: EdgeInsets.only(bottom: index == docs.length - 1 ? 0 : 12),
+              padding: EdgeInsets.only(
+                bottom: index == docs.length - 1 ? 0 : 12,
+              ),
               child: _buildNoteCard(
                 context: context,
                 noteId: docs[index].id,
@@ -409,11 +368,7 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -519,10 +474,7 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
-                      '·',
-                      style: TextStyle(color: Color(0xFF9CA3AF)),
-                    ),
+                    const Text('·', style: TextStyle(color: Color(0xFF9CA3AF))),
                     const SizedBox(width: 8),
                     const Icon(
                       Icons.menu_book_outlined,
@@ -598,153 +550,4 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
     return '${name.substring(0, 12)}…${name.substring(name.length - 8)}';
   }
 
-  Widget _buildBottomNavBar(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          height: 70,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(
-                icon: Icons.home,
-                label: 'Ana Sayfa',
-                isActive: false,
-                onTap: () => popToShellHome(context),
-              ),
-              _buildNavItem(
-                icon: Icons.calendar_today,
-                label: 'Etkinlikler',
-                isActive: false,
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const EventsScreen(),
-                    ),
-                  );
-                },
-              ),
-              _buildNavItemWithPlus(
-                label: 'Profilim',
-                isActive: false,
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ProfileScreen(),
-                    ),
-                  );
-                },
-              ),
-              _buildNavItem(
-                icon: Icons.campaign,
-                label: 'İlanlar',
-                isActive: false,
-                onTap: () {},
-              ),
-              _buildNavItem(
-                icon: Icons.menu_book_outlined,
-                label: 'Notlar',
-                isActive: true,
-                onTap: () {},
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: isActive ? 50 : 40,
-              height: isActive ? 50 : 40,
-              decoration: isActive
-                  ? BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF5A7FCF).withOpacity(0.2),
-                    )
-                  : null,
-              child: Icon(
-                icon,
-                color: isActive ? const Color(0xFF1E3A8A) : const Color(0xFF666666),
-                size: isActive ? 28 : 24,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color:
-                    isActive ? const Color(0xFF1E3A8A) : const Color(0xFF666666),
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItemWithPlus({
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF5A7FCF).withOpacity(0.2),
-              ),
-              child: const Icon(
-                Icons.person,
-                color: Color(0xFF1E3A8A),
-                size: 26,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF1E3A8A),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

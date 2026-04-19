@@ -3,10 +3,10 @@ import '../theme/uni_theme.dart';
 import 'login_page.dart';
 import 'register_page.dart';
 import 'calendar_page.dart';
-import 'events_page.dart';
-import 'profile_page.dart';
+import 'events_screen.dart';
+import 'profile_screen.dart';
 import 'announcements_page.dart';
-import 'notes_page.dart';
+import 'notes_feed_screen.dart';
 import '../services/auth_service.dart';
 
 class HomePage extends StatelessWidget {
@@ -549,8 +549,9 @@ class HomePage extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EventsPage(
-                    onToggleDarkMode: onToggleDarkMode,
+                  builder: (context) => EventsScreen(
+                    embeddedInShell: false,
+                    onToggleTheme: onToggleDarkMode,
                     isDarkMode: isDarkMode,
                   ),
                 ),
@@ -581,7 +582,13 @@ class HomePage extends StatelessWidget {
               } else {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                  MaterialPageRoute(
+                    builder: (context) => ProfileScreen(
+                      embeddedInShell: false,
+                      onToggleTheme: onToggleDarkMode,
+                      isDarkMode: isDarkMode,
+                    ),
+                  ),
                 );
               }
             },
@@ -609,7 +616,7 @@ class HomePage extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const NotesPage()),
+                MaterialPageRoute(builder: (context) => const NotesFeedScreen(embeddedInShell: false)),
               );
             },
           ),

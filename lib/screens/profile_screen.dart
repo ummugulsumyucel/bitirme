@@ -1,14 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../navigation/shell_tab_sync.dart';
 import '../services/auth_service.dart';
 import '../services/profile_photo_service.dart';
 import '../services/session_service.dart';
 import 'edit_profile_screen.dart';
-import 'events_screen.dart';
 import 'login_page.dart';
 import 'new_listing_screen.dart';
 import 'new_note_screen.dart';
@@ -18,8 +15,15 @@ import 'suggestion_complaint_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final bool embeddedInShell;
+  final VoidCallback? onToggleTheme;
+  final bool isDarkMode;
 
-  const ProfileScreen({super.key, this.embeddedInShell = false});
+  const ProfileScreen({
+    super.key,
+    this.embeddedInShell = false,
+    this.onToggleTheme,
+    this.isDarkMode = false,
+  });
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -219,9 +223,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
       return Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        appBar: AppBar(title: const Text('Profilim')),
+        appBar: AppBar(
+          title: const Text('Profilim'),
+          backgroundColor: const Color(0xFF1E3A8A),
+          foregroundColor: Colors.white,
+        ),
         body: gate,
-        bottomNavigationBar: _buildBottomNavBar(context),
       );
     }
 
@@ -304,15 +311,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(child: inner),
-          ],
-        ),
+      appBar: AppBar(
+        title: const Text('Profilim'),
+        backgroundColor: const Color(0xFF1E3A8A),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      bottomNavigationBar: _buildBottomNavBar(context),
+      body: inner,
     );
   }
 
@@ -357,45 +362,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      height: 60,
-      color: const Color(0xFF1E3A8A),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.school, color: Colors.white, size: 28),
-              SizedBox(width: 8),
-              Text(
-                'UniConnect',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.dark_mode_outlined, color: Colors.white),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () {},
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
@@ -734,7 +700,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const NewListingScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => NewListingScreen(
+                        onToggleTheme: widget.onToggleTheme,
+                        isDarkMode: widget.isDarkMode,
+                      ),
+                    ),
                   );
                 },
               ),
@@ -826,7 +797,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const NewNoteScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => NewNoteScreen(
+                        onToggleTheme: widget.onToggleTheme,
+                        isDarkMode: widget.isDarkMode,
+                      ),
+                    ),
                   );
                 },
               ),
@@ -1110,155 +1086,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         onPressed: onTap,
         child: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          height: 70,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(
-                icon: Icons.home,
-                label: 'Ana Sayfa',
-                isActive: false,
-                onTap: () => popToShellHome(context),
-              ),
-              _buildNavItem(
-                icon: Icons.calendar_today,
-                label: 'Etkinlikler',
-                isActive: false,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const EventsScreen()),
-                  );
-                },
-              ),
-              _buildNavItemWithPlus(
-                label: 'Profilim',
-                isActive: true,
-                onTap: () {},
-              ),
-              _buildNavItem(
-                icon: Icons.campaign,
-                label: 'İlanlar',
-                isActive: false,
-                onTap: () {},
-              ),
-              _buildNavItem(
-                icon: Icons.menu_book_outlined,
-                label: 'Notlar',
-                isActive: false,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const NotesFeedScreen()),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: isActive ? 50 : 40,
-              height: isActive ? 50 : 40,
-              decoration: isActive
-                  ? BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF5A7FCF).withOpacity(0.2),
-                    )
-                  : null,
-              child: Icon(
-                icon,
-                color: isActive
-                    ? const Color(0xFF1E3A8A)
-                    : const Color(0xFF666666),
-                size: isActive ? 28 : 24,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: isActive
-                    ? const Color(0xFF1E3A8A)
-                    : const Color(0xFF666666),
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItemWithPlus({
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF5A7FCF).withOpacity(0.2),
-              ),
-              child: const Icon(
-                Icons.person,
-                color: Color(0xFF1E3A8A),
-                size: 26,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF1E3A8A),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

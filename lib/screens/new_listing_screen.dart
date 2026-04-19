@@ -1,10 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../services/auth_service.dart';
 import '../services/session_service.dart';
+import 'announcements_page.dart';
+import 'calendar_page.dart';
+import 'events_screen.dart';
+import 'login_page.dart';
+import 'notes_feed_screen.dart';
+import 'profile_screen.dart';
+import 'register_page.dart';
 
 class NewListingScreen extends StatefulWidget {
-  const NewListingScreen({super.key});
+  final VoidCallback? onToggleTheme;
+  final bool isDarkMode;
+
+  const NewListingScreen({
+    super.key,
+    this.onToggleTheme,
+    this.isDarkMode = false,
+  });
 
   @override
   State<NewListingScreen> createState() => _NewListingScreenState();
@@ -31,6 +46,7 @@ class _NewListingScreenState extends State<NewListingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
+      drawer: _buildDrawer(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -154,10 +170,16 @@ class _NewListingScreenState extends State<NewListingScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
-            children: const [
-              Icon(Icons.school, color: Colors.white, size: 28),
-              SizedBox(width: 8),
-              Text(
+            children: [
+              Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              ),
+              const Icon(Icons.school, color: Colors.white, size: 28),
+              const SizedBox(width: 8),
+              const Text(
                 'UniConnect',
                 style: TextStyle(
                   color: Colors.white,
@@ -167,20 +189,12 @@ class _NewListingScreenState extends State<NewListingScreen> {
               ),
             ],
           ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.dark_mode_outlined,
-                  color: Colors.white,
-                ),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () {},
-              ),
-            ],
+          IconButton(
+            icon: Icon(
+              widget.isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+              color: Colors.white,
+            ),
+            onPressed: widget.onToggleTheme ?? () {},
           ),
         ],
       ),
@@ -374,7 +388,7 @@ class _NewListingScreenState extends State<NewListingScreen> {
 
     if (title.isEmpty || location.isEmpty || description.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lutfen tum zorunlu alanlari doldurun.')),
+        const SnackBar(content: Text('Lütfen tüm zorunlu alanları doldurun.')),
       );
       return;
     }
@@ -400,13 +414,24 @@ class _NewListingScreenState extends State<NewListingScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Ilan basariyla yayinlandi.')));
+      ).showSnackBar(
+        const SnackBar(
+          content: Text('İlan başarıyla yayınlandı!'),
+          backgroundColor: Colors.green,
+        ),
+      );
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Bir hata olustu: $e')));
+      ).showSnackBar(
+        SnackBar(
+          content: Text('Hata: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -415,6 +440,181 @@ class _NewListingScreenState extends State<NewListingScreen> {
       }
     }
   }
+
+  Widget _buildDrawer(BuildContext context) {
+    final authService = AuthService();
+    final isLoggedIn = authService.isLoggedIn;
+    
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: const BoxDecoration(
+              color: Color(0xFF1E3A8A),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const Icon(Icons.school, color: Colors.white, size: 48),
+                const SizedBox(height: 8),
+                const Text(
+                  'UniConnect',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (isLoggedIn) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    authService.currentUserName ?? 'Kullanıcı',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.home),
+            title: const Text('Ana Sayfa'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.calendar_today),
+            title: const Text('Etkinlikler'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EventsScreen(
+                    embeddedInShell: false,
+                    onToggleTheme: widget.onToggleTheme,
+                    isDarkMode: widget.isDarkMode,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.calendar_month),
+            title: const Text('Takvim'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const CalendarPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: const Text('Profilim'),
+            onTap: () {
+              Navigator.pop(context);
+              if (!isLoggedIn) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProfileScreen(
+                      embeddedInShell: false,
+                      onToggleTheme: widget.onToggleTheme,
+                      isDarkMode: widget.isDarkMode,
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.campaign),
+            title: const Text('İlanlar'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.note),
+            title: const Text('Notlar'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const NotesFeedScreen(embeddedInShell: false)),
+              );
+            },
+          ),
+          const Divider(),
+          if (!isLoggedIn) ...[
+            ListTile(
+              leading: const Icon(Icons.login),
+              title: const Text('Giriş Yap'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_add),
+              title: const Text('Kayıt Ol'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const RegisterPage()),
+                );
+              },
+            ),
+          ] else ...[
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Çıkış Yap'),
+              onTap: () async {
+                Navigator.pop(context);
+                await authService.logout();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Başarıyla çıkış yapıldı'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+          const Divider(),
+          ListTile(
+            leading: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            title: Text(widget.isDarkMode ? 'Açık Mod' : 'Koyu Mod'),
+            onTap: () {
+              if (widget.onToggleTheme != null) {
+                widget.onToggleTheme!();
+              }
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
 }
-
-

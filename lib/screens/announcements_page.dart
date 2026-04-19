@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'add_announcement_page.dart';
-import 'login_page.dart';
+
 import '../services/auth_service.dart';
+import 'login_page.dart';
+import 'new_listing_screen.dart';
 
 class AnnouncementsPage extends StatefulWidget {
   final VoidCallback onToggleDarkMode;
@@ -24,65 +26,126 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   final TextEditingController _searchController = TextEditingController();
   String? _selectedCategory;
   DateTime? _selectedTime;
-  List<Announcement> _announcements = [];
-  List<Announcement> _filteredAnnouncements = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeAnnouncements();
-  }
-
-  void _initializeAnnouncements() {
-    _announcements = [
-      Announcement(
-        id: '1',
-        title: 'Kütüphanede Kayıp Cüzdan Bulundu',
-        author: 'Mehmet Kaya',
-        location: 'Kütüphane - 2. Kat',
-        date: DateTime(2023, 12, 21),
-        category: 'Buluntu',
-        icon: Icons.business_center,
-        iconColor: Colors.brown,
-      ),
-      Announcement(
-        id: '2',
-        title: 'Kayıp Telefon Aranıyor',
-        author: 'Ayşe Demir',
-        location: 'Kantin Bölgesi',
-        date: DateTime(2023, 12, 19),
-        category: 'Kayıp Eşya',
-        icon: Icons.phone_android,
-        iconColor: Colors.purple,
-      ),
-      Announcement(
-        id: '3',
-        title: 'Anahtar Takımı Bulundu',
-        author: 'Ali Yılmaz',
-        location: 'Amfi 3 - Giriş',
-        date: DateTime(2023, 12, 18),
-        category: 'Buluntu',
-        icon: Icons.vpn_key,
-        iconColor: Colors.amber,
-      ),
-    ];
-    _filteredAnnouncements = _announcements;
-  }
 
   void _filterAnnouncements() {
-    setState(() {
-      _filteredAnnouncements = _announcements.where((announcement) {
-        final matchesSearch = _searchController.text.isEmpty ||
-            announcement.title.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-            announcement.author.toLowerCase().contains(_searchController.text.toLowerCase());
-        final matchesCategory = _selectedCategory == null || announcement.category == _selectedCategory;
-        final matchesTime = _selectedTime == null ||
-            (announcement.date.year == _selectedTime!.year &&
-                announcement.date.month == _selectedTime!.month &&
-                announcement.date.day == _selectedTime!.day);
-        return matchesSearch && matchesCategory && matchesTime;
-      }).toList();
-    });
+    setState(() {});
+  }
+
+  Announcement _announcementFromDoc(
+    QueryDocumentSnapshot<Map<String, dynamic>> d,
+  ) {
+    final data = d.data();
+    final ts = data['createdAt'];
+    DateTime date = DateTime.now();
+    if (ts is Timestamp) date = ts.toDate();
+    
+    // listings koleksiyonu için uyarlanmış veri çekme
+    final title = (data['title'] as String?)?.trim() ?? 'Başlıksız';
+    final location = (data['location'] as String?)?.trim() ?? '';
+    final type = (data['type'] as String?)?.trim() ?? '';
+    final category = (data['category'] as String?)?.trim() ?? '';
+    
+    // İkon ve renk belirleme (type'a göre)
+    IconData icon;
+    Color iconColor;
+    
+    if (type == 'Kayıp Eşya') {
+      icon = Icons.search;
+      iconColor = const Color(0xFFE53935);
+    } else if (type == 'Bulunan Eşya') {
+      icon = Icons.check_circle;
+      iconColor = const Color(0xFF43A047);
+    } else {
+      icon = Icons.campaign;
+      iconColor = const Color(0xFF5A7FCF);
+    }
+    
+    return Announcement(
+      id: d.id,
+      title: title,
+      author: type, // type'ı author olarak gösteriyoruz
+      location: location,
+      date: date,
+      category: category,
+      icon: icon,
+      iconColor: iconColor,
+    );
+  }
+
+  bool _announcementMatchesFilter(Announcement announcement) {
+    final matchesSearch = _searchController.text.isEmpty ||
+        announcement.title
+            .toLowerCase()
+            .contains(_searchController.text.toLowerCase()) ||
+        announcement.author
+            .toLowerCase()
+            .contains(_searchController.text.toLowerCase());
+    final matchesCategory =
+        _selectedCategory == null || announcement.category == _selectedCategory;
+    final matchesTime = _selectedTime == null ||
+        (announcement.date.year == _selectedTime!.year &&
+            announcement.date.month == _selectedTime!.month &&
+            announcement.date.day == _selectedTime!.day);
+    return matchesSearch && matchesCategory && matchesTime;
+  }
+
+  Widget _buildAnnouncementsList(ThemeData theme) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream:
+          FirebaseFirestore.instance.collection('listings').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'İlanlar yüklenemedi: ${snapshot.error}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+              ),
+            ),
+          );
+        }
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final docs = snapshot.data?.docs ??
+            <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+        final sorted = List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(
+          docs,
+        )..sort((a, b) {
+            final ta = a.data()['createdAt'];
+            final tb = b.data()['createdAt'];
+            final ma = ta is Timestamp ? ta.millisecondsSinceEpoch : 0;
+            final mb = tb is Timestamp ? tb.millisecondsSinceEpoch : 0;
+            return mb.compareTo(ma);
+          });
+        final items = sorted
+            .map(_announcementFromDoc)
+            .where(_announcementMatchesFilter)
+            .toList();
+
+        if (items.isEmpty) {
+          return Center(
+            child: Text(
+              'İlan bulunamadı',
+              style: TextStyle(
+                fontSize: 16,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            return _buildAnnouncementCard(items[index]);
+          },
+        );
+      },
+    );
   }
 
   void _showCategoryDialog() {
@@ -94,10 +157,12 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildCategoryOption('Tümü', null),
-            _buildCategoryOption('Kayıp Eşya', 'Kayıp Eşya'),
-            _buildCategoryOption('Buluntu', 'Buluntu'),
-            _buildCategoryOption('Satılık', 'Satılık'),
-            _buildCategoryOption('Kiralık', 'Kiralık'),
+            _buildCategoryOption('Genel', 'Genel'),
+            _buildCategoryOption('Elektronik', 'Elektronik'),
+            _buildCategoryOption('Kimlik / Kart', 'Kimlik / Kart'),
+            _buildCategoryOption('Kitap / Defter', 'Kitap / Defter'),
+            _buildCategoryOption('Anahtar', 'Anahtar'),
+            _buildCategoryOption('Diğer', 'Diğer'),
           ],
         ),
       ),
@@ -142,37 +207,22 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
       return;
     }
     
-    final result = await Navigator.push(
+    await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AddAnnouncementPage(),
+      MaterialPageRoute<bool>(
+        builder: (context) => NewListingScreen(
+          onToggleTheme: widget.onToggleDarkMode,
+          isDarkMode: widget.isDarkMode,
+        ),
       ),
     );
-    if (result != null && result is Announcement) {
-      setState(() {
-        _announcements.add(result);
-        _filterAnnouncements();
-      });
-    }
+    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final list = _filteredAnnouncements.isEmpty
-        ? Center(
-            child: Text(
-              'İlan bulunamadı',
-              style: TextStyle(fontSize: 16, color: scheme.onSurfaceVariant),
-            ),
-          )
-        : ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _filteredAnnouncements.length,
-            itemBuilder: (context, index) {
-              return _buildAnnouncementCard(_filteredAnnouncements[index]);
-            },
-          );
+    final list = _buildAnnouncementsList(Theme.of(context));
 
     if (widget.embeddedInShell) {
       return ColoredBox(
@@ -405,7 +455,16 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
           children: [
             Row(
               children: [
-                Icon(announcement.icon, color: const Color(0xFF1E3A8A)),
+                Icon(announcement.icon, color: announcement.iconColor),
+                const SizedBox(width: 8),
+                Text(
+                  announcement.author, // type bilgisi (Kayıp Eşya / Bulunan Eşya)
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: announcement.iconColor,
+                  ),
+                ),
                 const Spacer(),
               ],
             ),
@@ -420,9 +479,9 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.person, size: 16, color: Colors.grey),
+                const Icon(Icons.category, size: 16, color: Colors.grey),
                 const SizedBox(width: 8),
-                Text(announcement.author),
+                Text(announcement.category),
               ],
             ),
             const SizedBox(height: 4),
@@ -472,9 +531,23 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
           children: [
             Row(
               children: [
-                const Icon(Icons.person, size: 16),
+                Icon(announcement.icon, size: 20, color: announcement.iconColor),
                 const SizedBox(width: 8),
-                Text(announcement.author),
+                Text(
+                  announcement.author, // type bilgisi
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: announcement.iconColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.category, size: 16),
+                const SizedBox(width: 8),
+                Text(announcement.category),
               ],
             ),
             const SizedBox(height: 8),
@@ -491,14 +564,6 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                 const Icon(Icons.calendar_today, size: 16),
                 const SizedBox(width: 8),
                 Text(DateFormat('d MMMM yyyy').format(announcement.date)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.category, size: 16),
-                const SizedBox(width: 8),
-                Text(announcement.category),
               ],
             ),
           ],

@@ -1,11 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'profile_screen.dart';
-import 'notes_feed_screen.dart';
-import 'events_screen.dart';
 
 import '../navigation/shell_tab_sync.dart';
 import '../services/session_service.dart';
+import 'main_shell.dart';
 
 class EventDetailScreen extends StatelessWidget {
   final String eventId;
@@ -17,6 +15,8 @@ class EventDetailScreen extends StatelessWidget {
   final Color? labelColor;
   final LinearGradient? background;
   final IconData? icon;
+  final VoidCallback? onToggleTheme;
+  final bool isDarkMode;
 
   const EventDetailScreen({
     super.key,
@@ -29,302 +29,176 @@ class EventDetailScreen extends StatelessWidget {
     this.labelColor,
     this.background,
     this.icon,
+    this.onToggleTheme,
+    this.isDarkMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Hero Image Section
-                    Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                        gradient: background ??
-                            const LinearGradient(
-                              colors: [Color(0xFFE0ECFF), Color(0xFFE0ECFF)],
-                            ),
-                      ),
-                      child: Stack(
-                        children: [
-                          Center(
-                            child: Icon(
-                              icon ?? Icons.event,
-                              size: 80,
-                              color: const Color(0xFF111827).withOpacity(0.3),
-                            ),
-                          ),
-                          if (label != null && label!.isNotEmpty)
-                            Positioned(
-                              top: 16,
-                              right: 16,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: (labelColor ?? Colors.green)
-                                      .withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  label!,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: labelColor ?? Colors.green,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    // Content Section
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF111827),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          // Event Info Cards
-                          _buildInfoCard(
-                            icon: Icons.event,
-                            label: 'Tarih',
-                            value: date,
-                          ),
-                          const SizedBox(height: 12),
-                          _buildInfoCard(
-                            icon: Icons.place_outlined,
-                            label: 'Konum',
-                            value: place,
-                          ),
-                          const SizedBox(height: 12),
-                          _buildInfoCard(
-                            icon: Icons.access_time,
-                            label: 'Saat',
-                            value: time,
-                          ),
-                          const SizedBox(height: 24),
-                          // Description Section
-                          const Text(
-                            'Etkinlik Hakkında',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E3A8A),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Bu etkinlik kampüsümüzde düzenlenen özel bir organizasyondur. '
-                            'Tüm öğrencilerimiz davetlidir. Etkinlik sırasında interaktif '
-                            'oturumlar, sunumlar ve networking fırsatları sunulacaktır.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF6B7280),
-                              height: 1.6,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          // Participants Section
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Color(0xFF5A7FCF).withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.people_outline,
-                                    color: Color(0xFF1E3A8A),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                const Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Katılımcılar',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF6B7280),
-                                        ),
-                                      ),
-                                      SizedBox(height: 2),
-                                      Text(
-                                        '125 kişi katılıyor',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFF111827),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          // Join Button
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF5A7FCF),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                              onPressed: () async {
-                                final uid =
-                                    await SessionService.ensureUserDocId();
-                                if (!context.mounted) return;
-                                if (uid == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Önce Profilimden bilgilerini kaydet.',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                try {
-                                  await FirebaseFirestore.instance
-                                      .collection('event_attendees')
-                                      .doc('${uid}_$eventId')
-                                      .set(
-                                    {
-                                      'userDocId': uid,
-                                      'eventId': eventId,
-                                      'title': title,
-                                      'subtitle': '$place · $time',
-                                      'dateDisplay': date,
-                                      'joinedAt': FieldValue.serverTimestamp(),
-                                    },
-                                    SetOptions(merge: true),
-                                  );
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Etkinliğe katılım kaydedildi.',
-                                      ),
-                                      backgroundColor: Color(0xFF5A7FCF),
-                                    ),
-                                  );
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Hata: $e')),
-                                  );
-                                }
-                              },
-                              child: const Text(
-                                'Etkinliğe Katıl',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: _buildBottomNavBar(context),
-    );
-  }
+    final scheme = Theme.of(context).colorScheme;
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      height: 60,
-      color: const Color(0xFF1E3A8A),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.school, color: Colors.white, size: 28),
-              SizedBox(width: 8),
-              Text(
-                'UniConnect',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.dark_mode_outlined,
-                  color: Colors.white,
-                ),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () {},
-              ),
-            ],
+    return Scaffold(
+      backgroundColor: scheme.surface,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Etkinlik Detayı'),
+        actions: [
+          IconButton(
+            icon: Icon(isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
+            onPressed: onToggleTheme ?? () {},
           ),
         ],
       ),
+      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance
+            .collection('events')
+            .doc(eventId)
+            .snapshots(),
+        builder: (context, snap) {
+          final data = snap.data?.data() ?? {};
+          final description = (data['description'] as String?)?.trim();
+          final liveTitle = (data['title'] as String?)?.trim() ?? title;
+          final liveDate = (data['date'] as String?)?.trim() ?? date;
+          final livePlace = (data['place'] as String?)?.trim() ?? place;
+          final liveTime = (data['time'] as String?)?.trim() ?? time;
+          final liveLabel = (data['label'] as String?)?.trim() ?? label ?? '';
+
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Hero banner
+                Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: background ??
+                        const LinearGradient(
+                          colors: [Color(0xFFE0ECFF), Color(0xFFD0E4FF)],
+                        ),
+                  ),
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: Icon(
+                          icon ?? Icons.event,
+                          size: 80,
+                          color: const Color(0xFF111827).withValues(alpha: 0.25),
+                        ),
+                      ),
+                      if (liveLabel.isNotEmpty)
+                        Positioned(
+                          top: 16,
+                          right: 16,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: (labelColor ?? Colors.green)
+                                  .withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              liveLabel,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: labelColor ?? Colors.green,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        liveTitle,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: scheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      _buildInfoCard(context, Icons.event, 'Tarih', liveDate),
+                      const SizedBox(height: 10),
+                      _buildInfoCard(context, Icons.place_outlined, 'Konum', livePlace),
+                      const SizedBox(height: 10),
+                      _buildInfoCard(context, Icons.access_time, 'Saat', liveTime),
+
+                      const SizedBox(height: 24),
+
+                      Text(
+                        'Etkinlik Hakkında',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: scheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        (description != null && description.isNotEmpty)
+                            ? description
+                            : 'Bu etkinlik kampüsümüzde düzenlenen özel bir organizasyondur. '
+                                'Tüm öğrencilerimiz davetlidir.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: scheme.onSurfaceVariant,
+                          height: 1.6,
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      _buildAttendeesCard(context),
+
+                      const SizedBox(height: 24),
+
+                      _JoinButton(
+                        eventId: eventId,
+                        title: liveTitle,
+                        place: livePlace,
+                        time: liveTime,
+                        date: liveDate,
+                      ),
+
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      bottomNavigationBar: _buildBottomNav(context),
     );
   }
 
-  Widget _buildInfoCard({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
+  Widget _buildInfoCard(
+    BuildContext context,
+    IconData iconData,
+    String label,
+    String value,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -333,10 +207,10 @@ class EventDetailScreen extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFF5A7FCF).withOpacity(0.15),
+              color: scheme.primaryContainer,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: const Color(0xFF1E3A8A), size: 20),
+            child: Icon(iconData, color: scheme.primary, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -345,18 +219,15 @@ class EventDetailScreen extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF6B7280),
-                  ),
+                  style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF111827),
+                    color: scheme.onSurface,
                   ),
                 ),
               ],
@@ -367,152 +238,229 @@ class EventDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomNavBar(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, -2),
+  Widget _buildAttendeesCard(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('event_attendees')
+          .where('eventId', isEqualTo: eventId)
+          .snapshots(),
+      builder: (context, snap) {
+        final count = snap.data?.docs.length ?? 0;
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(12),
           ),
-        ],
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          height: 70,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(
-                icon: Icons.home,
-                label: 'Ana Sayfa',
-                isActive: false,
-                onTap: () => popToShellHome(context),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.people_outline, color: scheme.primary),
               ),
-              _buildNavItem(
-                icon: Icons.calendar_today,
-                label: 'Etkinlikler',
-                isActive: true,
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const EventsScreen()),
-                  );
-                },
-              ),
-              _buildNavItemWithPlus(
-                label: 'Profilim',
-                isActive: false,
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                  );
-                },
-              ),
-              _buildNavItem(
-                icon: Icons.campaign,
-                label: 'İlanlar',
-                isActive: false,
-                onTap: () {},
-              ),
-              _buildNavItem(
-                icon: Icons.menu_book_outlined,
-                label: 'Notlar',
-                isActive: false,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const NotesFeedScreen()),
-                  );
-                },
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Katılımcılar',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      snap.connectionState == ConnectionState.waiting
+                          ? 'Yükleniyor...'
+                          : '$count kişi katılıyor',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: isActive ? 50 : 40,
-              height: isActive ? 50 : 40,
-              decoration: isActive
-                  ? BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF5A7FCF).withOpacity(0.2),
-                    )
-                  : null,
-              child: Icon(
-                icon,
-                color: isActive ? const Color(0xFF1E3A8A) : const Color(0xFF666666),
-                size: isActive ? 28 : 24,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: isActive
-                    ? const Color(0xFF1E3A8A)
-                    : const Color(0xFF666666),
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildBottomNav(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
 
-  Widget _buildNavItemWithPlus({
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF5A7FCF).withOpacity(0.2),
-              ),
-              child: const Icon(Icons.person, color: Color(0xFF1E3A8A), size: 26),
+    const items = <({IconData icon, IconData activeIcon, String label, int tab})>[
+      (icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Ana Sayfa', tab: 0),
+      (icon: Icons.event_outlined, activeIcon: Icons.event, label: 'Etkinlikler', tab: 1),
+      (icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month, label: 'Takvim', tab: 2),
+      (icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profilim', tab: 3),
+      (icon: Icons.campaign_outlined, activeIcon: Icons.campaign, label: 'İlanlar', tab: 4),
+      (icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book, label: 'Notlar', tab: 5),
+    ];
+
+    return Material(
+      elevation: 0,
+      color: scheme.surfaceContainer,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+          ),
+        ),
+        child: SafeArea(
+          child: SizedBox(
+            height: 64,
+            child: Row(
+              children: items.map((item) => Expanded(
+                child: ShellNavItem(
+                  icon: item.icon,
+                  activeIcon: item.activeIcon,
+                  label: item.label,
+                  selected: item.tab == 1, // Etkinlikler aktif
+                  onTap: () {
+                    ShellTabSync.select(item.tab);
+                    Navigator.of(context).popUntil((r) => r.isFirst);
+                  },
+                ),
+              )).toList(),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF1E3A8A),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
+class _JoinButton extends StatefulWidget {
+  final String eventId;
+  final String title;
+  final String place;
+  final String time;
+  final String date;
+
+  const _JoinButton({
+    required this.eventId,
+    required this.title,
+    required this.place,
+    required this.time,
+    required this.date,
+  });
+
+  @override
+  State<_JoinButton> createState() => _JoinButtonState();
+}
+
+class _JoinButtonState extends State<_JoinButton> {
+  bool _loading = false;
+  bool _joined = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkJoined();
+  }
+
+  Future<void> _checkJoined() async {
+    final uid = await SessionService.ensureUserDocId();
+    if (uid == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('event_attendees')
+        .doc('${uid}_${widget.eventId}')
+        .get();
+    if (mounted) setState(() => _joined = doc.exists);
+  }
+
+  Future<void> _onTap() async {
+    final uid = await SessionService.ensureUserDocId();
+    if (!mounted) return;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Katılmak için giriş yapmalısınız.')),
+      );
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final ref = FirebaseFirestore.instance
+          .collection('event_attendees')
+          .doc('${uid}_${widget.eventId}');
+      if (_joined) {
+        await ref.delete();
+        if (mounted) setState(() => _joined = false);
+      } else {
+        await ref.set({
+          'userDocId': uid,
+          'eventId': widget.eventId,
+          'title': widget.title,
+          'subtitle': '${widget.place} · ${widget.time}',
+          'dateDisplay': widget.date,
+          'joinedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        if (mounted) setState(() => _joined = true);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _joined ? 'Etkinliğe katılım kaydedildi.' : 'Katılım iptal edildi.',
+            ),
+            backgroundColor: const Color(0xFF5A7FCF),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Hata: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              _joined ? Colors.grey.shade400 : const Color(0xFF5A7FCF),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+        onPressed: _loading ? null : _onTap,
+        child: _loading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                _joined ? 'Katılımı İptal Et' : 'Etkinliğe Katıl',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+      ),
+    );
+  }
+}

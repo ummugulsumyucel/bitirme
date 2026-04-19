@@ -110,9 +110,21 @@ class _MainShellState extends State<MainShell> {
             onToggleDarkMode: widget.onToggleTheme,
             isDarkMode: _isDark,
           ),
-          const EventsScreen(embeddedInShell: true),
-          const CalendarPage(embeddedInShell: true),
-          const ProfileScreen(embeddedInShell: true),
+          EventsScreen(
+            embeddedInShell: true,
+            onToggleTheme: widget.onToggleTheme,
+            isDarkMode: _isDark,
+          ),
+          CalendarPage(
+            embeddedInShell: true,
+            onToggleTheme: widget.onToggleTheme,
+            isDarkMode: _isDark,
+          ),
+          ProfileScreen(
+            embeddedInShell: true,
+            onToggleTheme: widget.onToggleTheme,
+            isDarkMode: _isDark,
+          ),
           AnnouncementsPage(
             embeddedInShell: true,
             onToggleDarkMode: widget.onToggleTheme,
@@ -389,7 +401,7 @@ class _MainShellState extends State<MainShell> {
               children: [
                 for (var i = 0; i < destinations.length; i++)
                   Expanded(
-                    child: _ShellNavItem(
+                    child: ShellNavItem(
                       icon: destinations[i].icon,
                       activeIcon: destinations[i].activeIcon,
                       label: destinations[i].label,
@@ -438,14 +450,14 @@ class _UniConnectRootShellState extends State<UniConnectRootShell> {
   }
 }
 
-class _ShellNavItem extends StatelessWidget {
+class ShellNavItem extends StatelessWidget {
   final IconData icon;
   final IconData activeIcon;
   final String label;
   final bool selected;
   final VoidCallback onTap;
 
-  const _ShellNavItem({
+  const ShellNavItem({
     required this.icon,
     required this.activeIcon,
     required this.label,

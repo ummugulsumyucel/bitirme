@@ -16,6 +16,8 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  bool _loggingIn = false;
+  bool _sendingReset = false;
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +83,9 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 12),
+              _firebaseAuthCaption(),
+              const SizedBox(height: 28),
               _buildEmailField(),
               const SizedBox(height: 16),
               _buildPasswordField(),
@@ -161,7 +165,9 @@ class _LoginPageState extends State<LoginPage> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 60),
+                        const SizedBox(height: 12),
+                        _firebaseAuthCaption(),
+                        const SizedBox(height: 36),
                         _buildEmailField(),
                         const SizedBox(height: 20),
                         _buildPasswordField(),
@@ -273,6 +279,19 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  Widget _firebaseAuthCaption() {
+    return Text(
+      'Giriş Firebase Authentication ile yapılır; yalnızca kayıt olduğunuz '
+      'e-posta ve şifre kabul edilir.',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 12,
+        height: 1.4,
+        color: Colors.grey.shade700,
+      ),
+    );
+  }
+
   Widget _buildEmailField() {
     return Container(
       decoration: BoxDecoration(
@@ -336,8 +355,8 @@ class _LoginPageState extends State<LoginPage> {
           if (value == null || value.isEmpty) {
             return 'Lütfen şifrenizi girin';
           }
-          if (value.length < 6) {
-            return 'Şifre en az 6 karakter olmalıdır';
+          if (value.length < 8) {
+            return 'Şifre en az 8 karakter olmalıdır';
           }
           return null;
         },
@@ -363,12 +382,10 @@ class _LoginPageState extends State<LoginPage> {
           ],
         ),
         TextButton(
-          onPressed: () {
-            // Şifremi unuttum işlemi
-          },
-          child: const Text(
-            'Şifremi Unuttum?',
-            style: TextStyle(color: Color(0xFF1E3A8A)),
+          onPressed: (_loggingIn || _sendingReset) ? null : _onForgotPassword,
+          child: Text(
+            _sendingReset ? 'Gönderiliyor…' : 'Şifremi Unuttum?',
+            style: const TextStyle(color: Color(0xFF1E3A8A)),
           ),
         ),
       ],
@@ -379,25 +396,26 @@ class _LoginPageState extends State<LoginPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () async {
-          if (_formKey.currentState!.validate()) {
-            final authService = AuthService();
-            final success = await authService.login(
-              _emailController.text,
-              _passwordController.text,
-            );
-            
-            if (success && context.mounted) {
-              finishLoginOrRegisterFlow(context);
-            } else if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Giriş başarısız. Lütfen bilgilerinizi kontrol edin.'),
-                ),
-              );
-            }
-          }
-        },
+        onPressed: _loggingIn
+            ? null
+            : () async {
+                if (_formKey.currentState!.validate()) {
+                  setState(() => _loggingIn = true);
+                  final err = await AuthService().login(
+                    _emailController.text.trim(),
+                    _passwordController.text,
+                  );
+                  if (!mounted) return;
+                  setState(() => _loggingIn = false);
+                  if (err == null) {
+                    finishLoginOrRegisterFlow(context);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(err)),
+                    );
+                  }
+                }
+              },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF5A7FCF),
           foregroundColor: Colors.white,
@@ -406,15 +424,55 @@ class _LoginPageState extends State<LoginPage> {
             borderRadius: BorderRadius.circular(30),
           ),
         ),
-        child: const Text(
-          'Giriş Yap',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        child: _loggingIn
+            ? const SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Text(
+                'Giriş Yap',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
     );
+  }
+
+  Future<void> _onForgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Şifre sıfırlama için önce geçerli e-posta adresinizi yazın.',
+          ),
+        ),
+      );
+      return;
+    }
+    setState(() => _sendingReset = true);
+    final err = await AuthService().sendPasswordResetEmail(email);
+    if (!mounted) return;
+    setState(() => _sendingReset = false);
+    if (err == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Şifre sıfırlama bağlantısı e-postanıza gönderildi. Gelen kutunuzu ve spam klasörünü kontrol edin.',
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err)),
+      );
+    }
   }
 
   Widget _buildRegisterLink() {
