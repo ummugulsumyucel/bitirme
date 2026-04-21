@@ -1,4 +1,7 @@
+// GIT_TEST_999
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/uni_theme.dart';
 import 'login_page.dart';
 import 'register_page.dart';
@@ -8,10 +11,14 @@ import 'profile_screen.dart';
 import 'announcements_page.dart';
 import 'notes_feed_screen.dart';
 import '../services/auth_service.dart';
+import '../services/klu_clubs_service.dart';
+import '../services/club_logo_service.dart';
+import '../services/klu_news_service.dart';
 
 class HomePage extends StatelessWidget {
   final VoidCallback onToggleDarkMode;
   final bool isDarkMode;
+
   /// [MainShell] içindeyken üst bar ve çekmece kabukta olduğundan yalnızca içerik çizilir.
   final bool embeddedInShell;
 
@@ -130,7 +137,11 @@ class HomePage extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(Icons.school_rounded, color: scheme.onPrimary, size: 30),
+                child: Icon(
+                  Icons.school_rounded,
+                  color: scheme.onPrimary,
+                  size: 30,
+                ),
               ),
               const SizedBox(width: 14),
               Text(
@@ -189,9 +200,142 @@ class HomePage extends StatelessWidget {
 
   Widget _buildUpcomingEventSection(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Başlık
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: UniBrand.accent,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Yaklaşan Etkinlikler',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: scheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Alt başlık
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Text(
+            'Öne Çıkan Etkinlikler',
+            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+          ),
+        ),
+
+        // Etkinlik kartları
+        StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('events')
+              .orderBy('createdAt', descending: true)
+              .limit(3)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: scheme.errorContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Etkinlikler yüklenirken hata oluştu',
+                    style: TextStyle(color: scheme.onErrorContainer),
+                  ),
+                ),
+              );
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Center(
+                  child: CircularProgressIndicator(color: scheme.primary),
+                ),
+              );
+            }
+
+            final events = snapshot.data?.docs ?? [];
+
+            if (events.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.event_rounded,
+                        size: 40,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          'Henüz etkinlik yok. Yakında kampüste düzenlenecek etkinlikler burada görünecek.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  for (int i = 0; i < events.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 12),
+                    _buildEventCard(context, events[i].data()),
+                  ],
+                  const SizedBox(
+                    height: 32,
+                  ), // "Bu hafta kampüste" ile arasında boşluk
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEventCard(BuildContext context, Map<String, dynamic> eventData) {
+    final scheme = Theme.of(context).colorScheme;
+    final title = (eventData['title'] as String?)?.trim() ?? 'Etkinlik';
+    final place = (eventData['place'] as String?)?.trim() ?? '';
+    final date = (eventData['date'] as String?)?.trim() ?? '';
+    final time = (eventData['time'] as String?)?.trim() ?? '';
+    final category = (eventData['category'] as String?)?.trim() ?? '';
+
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -204,45 +348,112 @@ class HomePage extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: scheme.primary.withValues(alpha: 0.28),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: scheme.primary.withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Sol taraf - Icon
           Container(
-            width: 58,
-            height: 58,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
               color: scheme.onPrimary.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(Icons.event_rounded, color: scheme.onPrimary, size: 30),
+            child: Icon(
+              _getEventIcon(category),
+              color: scheme.onPrimary,
+              size: 32,
+            ),
           ),
           const SizedBox(width: 16),
+          // Sağ taraf - İçerik
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Başlık
                 Text(
-                  'Etkinlik yakında',
+                  title,
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: scheme.onPrimary,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Kampüsün enerjisini yükseltecek bir etkinlikte öğrenciler bir araya geliyor. Tanış, eğlen, ücretsiz katıl — tüm öğrenciler davetli!',
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.45,
-                    color: scheme.onPrimary.withValues(alpha: 0.92),
+                const SizedBox(height: 6),
+                // Kategori
+                if (category.isNotEmpty)
+                  Text(
+                    category,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: scheme.onPrimary.withValues(alpha: 0.75),
+                    ),
                   ),
+                const SizedBox(height: 10),
+                // Yer
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on_rounded,
+                      size: 16,
+                      color: scheme.onPrimary.withValues(alpha: 0.85),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        place.isNotEmpty ? place : 'Yer belirtilmemiş',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: scheme.onPrimary.withValues(alpha: 0.9),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Tarih ve Saat
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 16,
+                      color: scheme.onPrimary.withValues(alpha: 0.85),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      date.isNotEmpty ? date : 'Tarih belirtilmemiş',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: scheme.onPrimary.withValues(alpha: 0.9),
+                      ),
+                    ),
+                    if (time.isNotEmpty) ...[
+                      const SizedBox(width: 16),
+                      Icon(
+                        Icons.access_time_rounded,
+                        size: 16,
+                        color: scheme.onPrimary.withValues(alpha: 0.85),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        time,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: scheme.onPrimary.withValues(alpha: 0.9),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
@@ -252,10 +463,36 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  IconData _getEventIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'konser':
+      case 'müzik':
+        return Icons.music_note_rounded;
+      case 'spor':
+        return Icons.sports_soccer_rounded;
+      case 'konferans':
+      case 'seminer':
+        return Icons.school_rounded;
+      case 'workshop':
+      case 'atölye':
+        return Icons.build_rounded;
+      case 'sosyal':
+      case 'parti':
+        return Icons.celebration_rounded;
+      default:
+        return Icons.event_rounded;
+    }
+  }
+
   Widget _buildThisWeekSection(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        24,
+        16,
+        0,
+      ), // Üstten 24px boşluk eklendi
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -271,7 +508,7 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                'Bu hafta kampüste',
+                'Bu Hafta Kampüste',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -282,99 +519,129 @@ class HomePage extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Öne çıkan başlıklar',
-            style: TextStyle(
-              fontSize: 13,
-              color: scheme.onSurfaceVariant,
-            ),
+            'Öne Çıkan Başlıklar',
+            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
-          _buildEventCard(
-            context,
-            'Kulüp buluşması',
-            'Kampüsteki kulüplerle tanışın; yeni dönem planları ve kayıt bilgileri.',
-            Icons.groups_rounded,
-          ),
-          const SizedBox(height: 12),
-          _buildEventCard(
-            context,
-            'Kariyer söyleşisi',
-            'Mezunlar ve sektör temsilcileriyle kısa bir soru-cevap oturumu.',
-            Icons.record_voice_over_rounded,
+          FutureBuilder<List<KluNews>>(
+            future: KluNewsService.fetchNews(),
+            builder: (context, snapshot) {
+              print('FutureBuilder state: ${snapshot.connectionState}');
+              print('Has data: ${snapshot.hasData}');
+              print('Data: ${snapshot.data}');
+              print('Data length: ${snapshot.data?.length}');
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: CircularProgressIndicator(color: scheme.primary),
+                  ),
+                );
+              }
+
+              final newsList = snapshot.data ?? [];
+              print('newsList length: ${newsList.length}');
+
+              if (newsList.isEmpty) {
+                print('Liste boş, fallback kart gösteriliyor');
+                return _buildNewsCard(
+                  context,
+                  const KluNews(
+                    title: 'HABERLER YÜKLENİYOR...',
+                    url:
+                        'https://kurumsaliletisim.klu.edu.tr/Sayfalar/43628-rektorumuz-turizm-haftasi-resepsiyonuna-katildi.klu',
+                    date: '17/04/2026',
+                    views: '0 okunma',
+                  ),
+                );
+              }
+
+              print('${newsList.length} haber gösteriliyor');
+              for (var news in newsList) {
+                print('Haber: ${news.title} - URL: ${news.url}');
+              }
+
+              return Column(
+                children: [
+                  for (int i = 0; i < newsList.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 4),
+                    _buildNewsCard(context, newsList[i]),
+                  ],
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEventCard(
-    BuildContext context,
-    String title,
-    String description,
-    IconData icon,
-  ) {
+  Widget _buildNewsCard(BuildContext context, KluNews news) {
     final scheme = Theme.of(context).colorScheme;
+
     return Material(
-      color: scheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
+      color: Colors.transparent,
       child: InkWell(
-        onTap: () {},
+        onTap: () {
+          print('Haber tıklandı: ${news.title}');
+          print('URL: ${news.url}');
+          _openClubUrl(context, news.url);
+        },
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           child: Row(
             children: [
+              // Sol taraf - Icon
               Container(
-                width: 52,
-                height: 52,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      UniBrand.accent,
-                      UniBrand.accentLight,
-                    ],
+                    colors: [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
                   ),
                   borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: UniBrand.accent.withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
-                child: Icon(icon, color: Colors.white, size: 26),
+                child: const Icon(
+                  Icons.campaign_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
+              // Sağ taraf - İçerik
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Başlık
                     Text(
-                      title,
+                      news.title.toUpperCase(),
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: scheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.35,
-                        color: scheme.onSurfaceVariant,
+                        height: 1.3,
+                        letterSpacing: 0.2,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 6),
+                    // Tarih ve okunma
+                    Text(
+                      '${news.date ?? ''} · ${news.views ?? '0 okunma'}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: scheme.outline),
             ],
           ),
         ),
@@ -384,6 +651,7 @@ class HomePage extends StatelessWidget {
 
   Widget _buildSupportingClubsSection(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final service = KluClubsService();
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(22),
@@ -409,7 +677,7 @@ class HomePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Destekleyen kulüpler',
+            'Destekleyen Kulüpler',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -418,46 +686,267 @@ class HomePage extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Kampüs topluluğu',
+            'Kampüs Topluluğu',
             style: TextStyle(
               fontSize: 13,
               color: scheme.onPrimary.withValues(alpha: 0.85),
             ),
           ),
-          const SizedBox(height: 18),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(
-              5,
-              (index) => Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: scheme.onPrimary.withValues(alpha: 0.14),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: scheme.onPrimary.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: Icon(
-                  Icons.groups_2_outlined,
-                  color: scheme.onPrimary.withValues(alpha: 0.95),
-                  size: 22,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 22),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatistic(context, Icons.people_alt_rounded, '1000+', 'Öğrenci'),
-              _buildStatistic(context, Icons.event_available_rounded, '100+', 'Etkinlik'),
-            ],
+          const SizedBox(height: 14),
+          FutureBuilder<List<KluClub>>(
+            future: service.fetchSupportingClubs(),
+            builder: (context, snap) {
+              final clubs = snap.data ?? KluClubsService.fallbackClubs;
+              if (clubs.isEmpty) return const SizedBox.shrink();
+              String query = '';
+              return StatefulBuilder(
+                builder: (context, setLocalState) {
+                  final filtered = clubs
+                      .where(
+                        (c) =>
+                            c.name.toLowerCase().contains(query.toLowerCase()),
+                      )
+                      .toList();
+
+                  return Column(
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Sol: istatistikler
+                          _buildStatistic(
+                            context,
+                            Icons.people_alt_rounded,
+                            '4.740',
+                            'Öğrenci',
+                          ),
+                          const SizedBox(width: 14),
+                          _buildStatistic(
+                            context,
+                            Icons.event_available_rounded,
+                            '565',
+                            'Etkinlik',
+                          ),
+                          const Spacer(),
+                          // Sağ: arama kutusu
+                          SizedBox(
+                            width: 180,
+                            height: 32,
+                            child: TextField(
+                              onChanged: (v) =>
+                                  setLocalState(() => query = v.trim()),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: scheme.onPrimary,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Kulüp ara...',
+                                hintStyle: TextStyle(
+                                  fontSize: 11,
+                                  color: scheme.onPrimary.withValues(
+                                    alpha: 0.75,
+                                  ),
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  size: 16,
+                                  color: scheme.onPrimary.withValues(
+                                    alpha: 0.85,
+                                  ),
+                                ),
+                                contentPadding: EdgeInsets.zero,
+                                filled: true,
+                                fillColor: scheme.onPrimary.withValues(
+                                  alpha: 0.14,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(999),
+                                  borderSide: BorderSide(
+                                    color: scheme.onPrimary.withValues(
+                                      alpha: 0.26,
+                                    ),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(999),
+                                  borderSide: BorderSide(
+                                    color: scheme.onPrimary.withValues(
+                                      alpha: 0.4,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 108,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 14),
+                          itemBuilder: (context, i) {
+                            final club = filtered[i];
+                            return InkWell(
+                              onTap: () => _openClubUrl(context, club.url),
+                              borderRadius: BorderRadius.circular(14),
+                              child: SizedBox(
+                                width: 92,
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: 62,
+                                      height: 62,
+                                      decoration: BoxDecoration(
+                                        color: scheme.onPrimary.withValues(
+                                          alpha: 0.16,
+                                        ),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: scheme.onPrimary.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                        ),
+                                      ),
+                                      child: ClipOval(
+                                        child: _buildClubLogo(
+                                          context,
+                                          club,
+                                          scheme,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      club.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: scheme.onPrimary.withValues(
+                                          alpha: 0.95,
+                                        ),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
     );
+  }
+
+  String _clubInitial(String name) {
+    final t = name.trim();
+    if (t.isEmpty) return 'K';
+    return t.characters.first.toUpperCase();
+  }
+
+  Widget _buildClubLogo(
+    BuildContext context,
+    KluClub club,
+    ColorScheme scheme,
+  ) {
+    // Logo yoksa veya boşsa baş harfi göster
+    if (club.logoUrl == null || club.logoUrl!.isEmpty) {
+      return Center(
+        child: Text(
+          _clubInitial(club.name),
+          style: TextStyle(
+            color: scheme.onPrimary,
+            fontWeight: FontWeight.w800,
+            fontSize: 20,
+          ),
+        ),
+      );
+    }
+
+    // Logo varsa (defaultLogo dahil) yükle ve göster
+    return FutureBuilder<String?>(
+      future: ClubLogoService.getBase64Logo(club.logoUrl!),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: scheme.onPrimary.withValues(alpha: 0.5),
+            ),
+          );
+        }
+        if (snapshot.hasData && snapshot.data != null) {
+          return Image.network(
+            snapshot.data!,
+            width: 62,
+            height: 62,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Center(
+              child: Text(
+                _clubInitial(club.name),
+                style: TextStyle(
+                  color: scheme.onPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+          );
+        }
+        // Yükleme başarısız olursa baş harfi göster
+        return Center(
+          child: Text(
+            _clubInitial(club.name),
+            style: TextStyle(
+              color: scheme.onPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 20,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openClubUrl(BuildContext context, String url) async {
+    print('_openClubUrl çağrıldı: $url');
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      print('URI parse edilemedi: $url');
+      return;
+    }
+    print('URI başarıyla parse edildi: $uri');
+
+    try {
+      // Web için externalApplication kullan (yeni sekmede açar)
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      print('launchUrl sonucu: $ok');
+      if (!ok && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Sayfa açılamadı: $url')));
+      }
+    } catch (e) {
+      print('launchUrl hatası: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Hata: $e')));
+      }
+    }
   }
 
   Widget _buildStatistic(
@@ -498,15 +987,13 @@ class HomePage extends StatelessWidget {
   Widget _buildDrawer(BuildContext context) {
     final authService = AuthService();
     final isLoggedIn = authService.isLoggedIn;
-    
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(
-              color: Color(0xFF1E3A8A),
-            ),
+            decoration: const BoxDecoration(color: Color(0xFF1E3A8A)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
@@ -525,10 +1012,7 @@ class HomePage extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     authService.currentUserName ?? 'Kullanıcı',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ],
@@ -616,7 +1100,10 @@ class HomePage extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const NotesFeedScreen(embeddedInShell: false)),
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const NotesFeedScreen(embeddedInShell: false),
+                ),
               );
             },
           ),
