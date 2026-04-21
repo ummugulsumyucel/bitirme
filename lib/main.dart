@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'screens/main_shell.dart';
 import 'services/auth_service.dart';
@@ -10,10 +12,9 @@ import 'theme/uni_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await AuthService().initialize();
+  await initializeDateFormatting('tr_TR', null);
   runApp(const MyApp());
 }
 
@@ -31,8 +32,9 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _authSubscription =
-        FirebaseAuth.instance.authStateChanges().listen((_) async {
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((
+      _,
+    ) async {
       await AuthService().initialize();
       if (mounted) setState(() {});
     });
@@ -46,8 +48,9 @@ class _MyAppState extends State<MyApp> {
 
   void _toggleTheme() {
     setState(() {
-      _themeMode =
-          _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+      _themeMode = _themeMode == ThemeMode.dark
+          ? ThemeMode.light
+          : ThemeMode.dark;
     });
   }
 
@@ -59,10 +62,14 @@ class _MyAppState extends State<MyApp> {
       themeMode: _themeMode,
       theme: uniTheme(Brightness.light),
       darkTheme: uniTheme(Brightness.dark),
-      home: MainShell(
-        themeMode: _themeMode,
-        onToggleTheme: _toggleTheme,
-      ),
+      locale: const Locale('tr', 'TR'),
+      supportedLocales: const [Locale('tr', 'TR'), Locale('en', 'US')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: MainShell(themeMode: _themeMode, onToggleTheme: _toggleTheme),
     );
   }
 }

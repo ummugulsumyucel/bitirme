@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../navigation/shell_tab_sync.dart';
 import '../services/session_service.dart';
+import '../widgets/common_app_bar.dart';
+import '../widgets/common_drawer.dart';
 import 'main_shell.dart';
 
 class EventDetailScreen extends StatelessWidget {
@@ -39,18 +41,14 @@ class EventDetailScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: scheme.surface,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text('Etkinlik Detayı'),
-        actions: [
-          IconButton(
-            icon: Icon(isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
-            onPressed: onToggleTheme ?? () {},
-          ),
-        ],
+      appBar: CommonAppBar(
+        title: 'Etkinlik Detayı',
+        onToggleTheme: onToggleTheme,
+        isDarkMode: isDarkMode,
+      ),
+      drawer: CommonDrawer(
+        onToggleTheme: onToggleTheme,
+        isDarkMode: isDarkMode,
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
@@ -75,7 +73,8 @@ class EventDetailScreen extends StatelessWidget {
                   height: 200,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    gradient: background ??
+                    gradient:
+                        background ??
                         const LinearGradient(
                           colors: [Color(0xFFE0ECFF), Color(0xFFD0E4FF)],
                         ),
@@ -86,7 +85,9 @@ class EventDetailScreen extends StatelessWidget {
                         child: Icon(
                           icon ?? Icons.event,
                           size: 80,
-                          color: const Color(0xFF111827).withValues(alpha: 0.25),
+                          color: const Color(
+                            0xFF111827,
+                          ).withValues(alpha: 0.25),
                         ),
                       ),
                       if (liveLabel.isNotEmpty)
@@ -99,8 +100,9 @@ class EventDetailScreen extends StatelessWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: (labelColor ?? Colors.green)
-                                  .withValues(alpha: 0.15),
+                              color: (labelColor ?? Colors.green).withValues(
+                                alpha: 0.15,
+                              ),
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
@@ -134,9 +136,19 @@ class EventDetailScreen extends StatelessWidget {
 
                       _buildInfoCard(context, Icons.event, 'Tarih', liveDate),
                       const SizedBox(height: 10),
-                      _buildInfoCard(context, Icons.place_outlined, 'Konum', livePlace),
+                      _buildInfoCard(
+                        context,
+                        Icons.place_outlined,
+                        'Konum',
+                        livePlace,
+                      ),
                       const SizedBox(height: 10),
-                      _buildInfoCard(context, Icons.access_time, 'Saat', liveTime),
+                      _buildInfoCard(
+                        context,
+                        Icons.access_time,
+                        'Saat',
+                        liveTime,
+                      ),
 
                       const SizedBox(height: 24),
 
@@ -153,7 +165,7 @@ class EventDetailScreen extends StatelessWidget {
                         (description != null && description.isNotEmpty)
                             ? description
                             : 'Bu etkinlik kampüsümüzde düzenlenen özel bir organizasyondur. '
-                                'Tüm öğrencilerimiz davetlidir.',
+                                  'Tüm öğrencilerimiz davetlidir.',
                         style: TextStyle(
                           fontSize: 14,
                           color: scheme.onSurfaceVariant,
@@ -219,7 +231,10 @@ class EventDetailScreen extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -298,16 +313,17 @@ class EventDetailScreen extends StatelessWidget {
   }
 
   Widget _buildBottomNav(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    const items = <({IconData icon, IconData activeIcon, String label, int tab})>[
-      (icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Ana Sayfa', tab: 0),
-      (icon: Icons.event_outlined, activeIcon: Icons.event, label: 'Etkinlikler', tab: 1),
-      (icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month, label: 'Takvim', tab: 2),
-      (icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profilim', tab: 3),
-      (icon: Icons.campaign_outlined, activeIcon: Icons.campaign, label: 'İlanlar', tab: 4),
-      (icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book, label: 'Notlar', tab: 5),
+    const destinations = <({IconData icon, IconData activeIcon, String label})>[
+      (icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Ana Sayfa'),
+      (
+        icon: Icons.calendar_month_outlined,
+        activeIcon: Icons.calendar_month,
+        label: 'Takvim',
+      ),
+      (icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profilim'),
     ];
+
+    final scheme = Theme.of(context).colorScheme;
 
     return Material(
       elevation: 0,
@@ -315,25 +331,41 @@ class EventDetailScreen extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           border: Border(
-            top: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+            top: BorderSide(
+              color: scheme.outlineVariant.withValues(alpha: 0.5),
+            ),
           ),
         ),
         child: SafeArea(
           child: SizedBox(
             height: 64,
             child: Row(
-              children: items.map((item) => Expanded(
-                child: ShellNavItem(
-                  icon: item.icon,
-                  activeIcon: item.activeIcon,
-                  label: item.label,
-                  selected: item.tab == 1, // Etkinlikler aktif
-                  onTap: () {
-                    ShellTabSync.select(item.tab);
-                    Navigator.of(context).popUntil((r) => r.isFirst);
-                  },
-                ),
-              )).toList(),
+              children: [
+                for (var i = 0; i < destinations.length; i++)
+                  Expanded(
+                    child: ShellNavItem(
+                      icon: destinations[i].icon,
+                      activeIcon: destinations[i].activeIcon,
+                      label: destinations[i].label,
+                      selected: false,
+                      onTap: () {
+                        if (i == 0) {
+                          // Ana Sayfa
+                          ShellTabSync.select(0);
+                          Navigator.of(context).popUntil((r) => r.isFirst);
+                        } else if (i == 1) {
+                          // Takvim
+                          ShellTabSync.select(1);
+                          Navigator.of(context).popUntil((r) => r.isFirst);
+                        } else if (i == 2) {
+                          // Profilim
+                          ShellTabSync.select(2);
+                          Navigator.of(context).popUntil((r) => r.isFirst);
+                        }
+                      },
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -413,7 +445,9 @@ class _JoinButtonState extends State<_JoinButton> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              _joined ? 'Etkinliğe katılım kaydedildi.' : 'Katılım iptal edildi.',
+              _joined
+                  ? 'Etkinliğe katılım kaydedildi.'
+                  : 'Katılım iptal edildi.',
             ),
             backgroundColor: const Color(0xFF5A7FCF),
           ),
@@ -421,8 +455,9 @@ class _JoinButtonState extends State<_JoinButton> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Hata: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Hata: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -435,8 +470,9 @@ class _JoinButtonState extends State<_JoinButton> {
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor:
-              _joined ? Colors.grey.shade400 : const Color(0xFF5A7FCF),
+          backgroundColor: _joined
+              ? Colors.grey.shade400
+              : const Color(0xFF5A7FCF),
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),

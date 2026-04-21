@@ -10,7 +10,6 @@ import 'announcements_page.dart';
 import 'calendar_page.dart';
 import 'events_screen.dart';
 import 'login_page.dart';
-import 'notes_feed_screen.dart';
 import 'profile_screen.dart';
 import 'register_page.dart';
 
@@ -18,11 +17,7 @@ class NewNoteScreen extends StatefulWidget {
   final VoidCallback? onToggleTheme;
   final bool isDarkMode;
 
-  const NewNoteScreen({
-    super.key,
-    this.onToggleTheme,
-    this.isDarkMode = false,
-  });
+  const NewNoteScreen({super.key, this.onToggleTheme, this.isDarkMode = false});
 
   @override
   State<NewNoteScreen> createState() => _NewNoteScreenState();
@@ -32,9 +27,9 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
   final TextEditingController _courseController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _departmentController = TextEditingController();
 
   String _selectedSemester = '1. Sınıf';
-  String _selectedDepartment = 'Bilgisayar Mühendisliği';
   String _selectedType = 'Ders Notu';
   bool _isSubmitting = false;
   PlatformFile? _pickedFile;
@@ -45,6 +40,7 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
     _courseController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
+    _departmentController.dispose();
     super.dispose();
   }
 
@@ -111,7 +107,12 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                       const SizedBox(height: 16),
                       _buildLabeledField(
                         label: 'Bölüm',
-                        child: _buildDepartmentDropdown(),
+                        child: TextField(
+                          controller: _departmentController,
+                          decoration: _inputDecoration(
+                            hintText: 'Örn: Bilgisayar Mühendisliği',
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _buildLabeledField(
@@ -198,7 +199,9 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
           ),
           IconButton(
             icon: Icon(
-              widget.isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+              widget.isDarkMode
+                  ? Icons.light_mode_outlined
+                  : Icons.dark_mode_outlined,
               color: Colors.white,
             ),
             onPressed: widget.onToggleTheme ?? () {},
@@ -298,55 +301,6 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
             if (value == null) return;
             setState(() {
               _selectedSemester = value;
-            });
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDepartmentDropdown() {
-    final departments = <String>[
-      'Bilgisayar Mühendisliği',
-      'Elektrik-Elektronik Mühendisliği',
-      'Makine Mühendisliği',
-      'İşletme',
-      'İktisat',
-      'Sosyal Hizmet',
-      'Psikoloji',
-      'Diğer',
-    ];
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _selectedDepartment,
-          isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded),
-          items: departments
-              .map(
-                (e) => DropdownMenuItem<String>(
-                  value: e,
-                  child: Text(
-                    e,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                ),
-              )
-              .toList(),
-          onChanged: (value) {
-            if (value == null) return;
-            setState(() {
-              _selectedDepartment = value;
             });
           },
         ),
@@ -543,8 +497,7 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
           .doc(docId)
           .get();
       final n = doc.data()?['fullName'] as String?;
-      final name =
-          (n != null && n.trim().isNotEmpty) ? n.trim() : 'Öğrenci';
+      final name = (n != null && n.trim().isNotEmpty) ? n.trim() : 'Öğrenci';
       return (name: name, userDocId: docId);
     } catch (_) {
       return (name: 'Öğrenci', userDocId: docId);
@@ -555,8 +508,12 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
     final course = _courseController.text.trim();
     final title = _titleController.text.trim();
     final description = _descriptionController.text.trim();
+    final department = _departmentController.text.trim();
 
-    if (course.isEmpty || title.isEmpty || description.isEmpty) {
+    if (course.isEmpty ||
+        title.isEmpty ||
+        description.isEmpty ||
+        department.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lütfen tüm zorunlu alanları doldurun.')),
       );
@@ -603,7 +560,7 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
         'course': course,
         'title': title,
         'description': description,
-        'department': _selectedDepartment,
+        'department': department,
         'semester': _selectedSemester,
         'type': _selectedType,
         'uploaderName': uploader.name,
@@ -640,15 +597,13 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
   Widget _buildDrawer(BuildContext context) {
     final authService = AuthService();
     final isLoggedIn = authService.isLoggedIn;
-    
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(
-              color: Color(0xFF1E3A8A),
-            ),
+            decoration: const BoxDecoration(color: Color(0xFF1E3A8A)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
@@ -667,10 +622,7 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                   const SizedBox(height: 8),
                   Text(
                     authService.currentUserName ?? 'Kullanıcı',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ],
@@ -804,7 +756,9 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
           ],
           const Divider(),
           ListTile(
-            leading: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            leading: Icon(
+              widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+            ),
             title: Text(widget.isDarkMode ? 'Açık Mod' : 'Koyu Mod'),
             onTap: () {
               if (widget.onToggleTheme != null) {
@@ -817,5 +771,4 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
       ),
     );
   }
-
 }

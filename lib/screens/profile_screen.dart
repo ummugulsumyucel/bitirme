@@ -123,9 +123,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Yükleme başarısız: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Yükleme başarısız: $e')));
       }
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
@@ -152,9 +152,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 'Profil ve kişisel alan',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: scheme.onSurface,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: scheme.onSurface,
+                ),
               ),
               const SizedBox(height: 12),
               Text(
@@ -235,72 +235,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final inner = _loadingSession
         ? const Center(child: CircularProgressIndicator())
         : _userDocId == null
-            ? _buildSetupPrompt()
-            : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(_userDocId)
-                    .snapshots(),
-                builder: (context, snap) {
-                  if (snap.hasError) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          'Profil verisi alınamadı:\n${snap.error}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.redAccent,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  if (snap.connectionState == ConnectionState.waiting &&
-                      !snap.hasData) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-                  final userData = snap.data?.data() ?? {};
-                  return SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 16),
-                          _buildProfileCard(userData),
-                          const SizedBox(height: 12),
-                          _buildPersonalInfoCard(userData),
-                          const SizedBox(height: 12),
-                          _buildMyEventsSection(_userDocId!),
-                          const SizedBox(height: 12),
-                          _buildMyListingsSection(_userDocId!),
-                          const SizedBox(height: 12),
-                          _buildMyNotesSection(_userDocId!),
-                          const SizedBox(height: 12),
-                          _buildSavedNotesSection(_userDocId!),
-                          const SizedBox(height: 16),
-                          _buildPrimaryButton(
-                            'Şikayet / Öneri Ekle',
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const SuggestionComplaintScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                        ],
+        ? _buildSetupPrompt()
+        : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .doc(_userDocId)
+                .snapshots(),
+            builder: (context, snap) {
+              if (snap.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Profil verisi alınamadı:\n${snap.error}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 13,
                       ),
                     ),
-                  );
-                },
+                  ),
+                );
+              }
+              if (snap.connectionState == ConnectionState.waiting &&
+                  !snap.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final userData = snap.data?.data() ?? {};
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 16),
+                      _buildProfileCard(userData),
+                      const SizedBox(height: 12),
+                      _buildPersonalInfoCard(userData),
+                      const SizedBox(height: 12),
+                      _buildMyEventsSection(_userDocId!),
+                      const SizedBox(height: 12),
+                      _buildMyListingsSection(_userDocId!),
+                      const SizedBox(height: 12),
+                      _buildMyNotesSection(_userDocId!),
+                      const SizedBox(height: 12),
+                      _buildSavedNotesSection(_userDocId!),
+                      const SizedBox(height: 16),
+                      _buildPrimaryButton(
+                        'Şikayet / Öneri Ekle',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SuggestionComplaintScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
               );
+            },
+          );
 
     if (widget.embeddedInShell) {
       return ColoredBox(
@@ -328,7 +325,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.person_outline, size: 64, color: Color(0xFF1E3A8A)),
+            const Icon(
+              Icons.person_outline,
+              size: 64,
+              color: Color(0xFF1E3A8A),
+            ),
             const SizedBox(height: 16),
             const Text(
               'Profilini oluştur',
@@ -369,24 +370,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildProfileAvatar(String? photoUrl) {
     final url = photoUrl?.trim();
     final uri = url != null && url.isNotEmpty ? Uri.tryParse(url) : null;
-    final ok = uri != null &&
+    final ok =
+        uri != null &&
         (uri.isScheme('http') || uri.isScheme('https')) &&
         uri.host.isNotEmpty;
 
     if (!ok) {
-      return Image.asset(
-        'assets/images/placeholder.png',
-        fit: BoxFit.cover,
-      );
+      return Image.asset('assets/images/placeholder.png', fit: BoxFit.cover);
     }
 
     return Image.network(
       uri.toString(),
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Image.asset(
-        'assets/images/placeholder.png',
-        fit: BoxFit.cover,
-      ),
+      errorBuilder: (_, __, ___) =>
+          Image.asset('assets/images/placeholder.png', fit: BoxFit.cover),
       loadingBuilder: (_, child, progress) {
         if (progress == null) return child;
         return const Center(
@@ -431,7 +428,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.12),
+                      color: Colors.black.withValues(alpha: 0.12),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -464,14 +461,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 8),
           Material(
-            color: Color(0xFF5A7FCF).withOpacity(0.15),
+            color: Color(0xFF5A7FCF).withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(20),
             child: InkWell(
               onTap: _uploadingPhoto ? null : _pickAndUploadPhoto,
               borderRadius: BorderRadius.circular(20),
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -520,8 +519,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildPersonalInfoCard(Map<String, dynamic> userData) {
-    final department =
-        (userData['department'] as String?) ?? '—';
+    final department = (userData['department'] as String?) ?? '—';
     final grade = (userData['grade'] as String?) ?? '—';
     final email = (userData['email'] as String?) ?? '—';
 
@@ -622,11 +620,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: List.generate(docs.length, (i) {
                     final d = docs[i].data();
                     return Padding(
-                      padding: EdgeInsets.only(bottom: i < docs.length - 1 ? 8 : 0),
+                      padding: EdgeInsets.only(
+                        bottom: i < docs.length - 1 ? 8 : 0,
+                      ),
                       child: _buildEventItem(
                         title: (d['title'] as String?) ?? 'Etkinlik',
                         subtitle: (d['subtitle'] as String?) ?? '',
-                        date: _formatTs(d['joinedAt']) ??
+                        date:
+                            _formatTs(d['joinedAt']) ??
                             (d['dateDisplay'] as String?) ??
                             '',
                       ),
@@ -687,11 +688,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   final title = (d['title'] as String?) ?? 'İlan';
                   final created = _formatTs(d['createdAt']);
                   return Padding(
-                    padding: EdgeInsets.only(bottom: i < docs.length - 1 ? 8 : 0),
-                    child: _buildBulletItem(
-                      title: title,
-                      date: created,
+                    padding: EdgeInsets.only(
+                      bottom: i < docs.length - 1 ? 8 : 0,
                     ),
+                    child: _buildBulletItem(title: title, date: created),
                   );
                 }),
               const SizedBox(height: 16),
@@ -750,7 +750,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const NotesFeedScreen()),
+                MaterialPageRoute(
+                  builder: (_) => NotesFeedScreen(
+                    embeddedInShell: false,
+                    onToggleTheme: widget.onToggleTheme,
+                    isDarkMode: widget.isDarkMode,
+                  ),
+                ),
               );
             },
             child: const Text(
@@ -774,16 +780,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Expanded(
                       child: _buildNotePreview(
                         title: (docs[0].data()['title'] as String?) ?? '',
-                        subtitle:
-                            (docs[0].data()['course'] as String?) ?? '',
+                        subtitle: (docs[0].data()['course'] as String?) ?? '',
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: docs.length > 1
                           ? _buildNotePreview(
-                              title:
-                                  (docs[1].data()['title'] as String?) ?? '',
+                              title: (docs[1].data()['title'] as String?) ?? '',
                               subtitle:
                                   (docs[1].data()['course'] as String?) ?? '',
                             )
@@ -852,7 +856,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ...List.generate(docs.length, (i) {
                   final d = docs[i].data();
                   return Padding(
-                    padding: EdgeInsets.only(bottom: i < docs.length - 1 ? 8 : 0),
+                    padding: EdgeInsets.only(
+                      bottom: i < docs.length - 1 ? 8 : 0,
+                    ),
                     child: _buildBulletItem(
                       title: (d['noteTitle'] as String?) ?? 'Not',
                       date: _formatTs(d['savedAt']),
@@ -865,7 +871,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const NotesFeedScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => NotesFeedScreen(
+                        embeddedInShell: false,
+                        onToggleTheme: widget.onToggleTheme,
+                        isDarkMode: widget.isDarkMode,
+                      ),
+                    ),
                   );
                 },
               ),
@@ -916,7 +928,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF5A7FCF).withOpacity(0.15),
+        color: Color(0xFF5A7FCF).withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
@@ -948,7 +960,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFF5A7FCF).withOpacity(0.15),
+              color: Color(0xFF5A7FCF).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.event, color: Color(0xFF1E3A8A)),
@@ -1028,10 +1040,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildNotePreview({
-    required String title,
-    required String subtitle,
-  }) {
+  Widget _buildNotePreview({required String title, required String subtitle}) {
     return Container(
       height: 90,
       decoration: BoxDecoration(

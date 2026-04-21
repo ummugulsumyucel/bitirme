@@ -38,17 +38,17 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
     final ts = data['createdAt'];
     DateTime date = DateTime.now();
     if (ts is Timestamp) date = ts.toDate();
-    
+
     // listings koleksiyonu için uyarlanmış veri çekme
     final title = (data['title'] as String?)?.trim() ?? 'Başlıksız';
     final location = (data['location'] as String?)?.trim() ?? '';
     final type = (data['type'] as String?)?.trim() ?? '';
     final category = (data['category'] as String?)?.trim() ?? '';
-    
+
     // İkon ve renk belirleme (type'a göre)
     IconData icon;
     Color iconColor;
-    
+
     if (type == 'Kayıp Eşya') {
       icon = Icons.search;
       iconColor = const Color(0xFFE53935);
@@ -59,7 +59,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
       icon = Icons.campaign;
       iconColor = const Color(0xFF5A7FCF);
     }
-    
+
     return Announcement(
       id: d.id,
       title: title,
@@ -73,16 +73,18 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   }
 
   bool _announcementMatchesFilter(Announcement announcement) {
-    final matchesSearch = _searchController.text.isEmpty ||
-        announcement.title
-            .toLowerCase()
-            .contains(_searchController.text.toLowerCase()) ||
-        announcement.author
-            .toLowerCase()
-            .contains(_searchController.text.toLowerCase());
+    final matchesSearch =
+        _searchController.text.isEmpty ||
+        announcement.title.toLowerCase().contains(
+          _searchController.text.toLowerCase(),
+        ) ||
+        announcement.author.toLowerCase().contains(
+          _searchController.text.toLowerCase(),
+        );
     final matchesCategory =
         _selectedCategory == null || announcement.category == _selectedCategory;
-    final matchesTime = _selectedTime == null ||
+    final matchesTime =
+        _selectedTime == null ||
         (announcement.date.year == _selectedTime!.year &&
             announcement.date.month == _selectedTime!.month &&
             announcement.date.day == _selectedTime!.day);
@@ -91,8 +93,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
 
   Widget _buildAnnouncementsList(ThemeData theme) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream:
-          FirebaseFirestore.instance.collection('listings').snapshots(),
+      stream: FirebaseFirestore.instance.collection('listings').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(
@@ -110,17 +111,18 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
             !snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final docs = snapshot.data?.docs ??
+        final docs =
+            snapshot.data?.docs ??
             <QueryDocumentSnapshot<Map<String, dynamic>>>[];
-        final sorted = List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(
-          docs,
-        )..sort((a, b) {
-            final ta = a.data()['createdAt'];
-            final tb = b.data()['createdAt'];
-            final ma = ta is Timestamp ? ta.millisecondsSinceEpoch : 0;
-            final mb = tb is Timestamp ? tb.millisecondsSinceEpoch : 0;
-            return mb.compareTo(ma);
-          });
+        final sorted =
+            List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(docs)
+              ..sort((a, b) {
+                final ta = a.data()['createdAt'];
+                final tb = b.data()['createdAt'];
+                final ma = ta is Timestamp ? ta.millisecondsSinceEpoch : 0;
+                final mb = tb is Timestamp ? tb.millisecondsSinceEpoch : 0;
+                return mb.compareTo(ma);
+              });
         final items = sorted
             .map(_announcementFromDoc)
             .where(_announcementMatchesFilter)
@@ -206,7 +208,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
       );
       return;
     }
-    
+
     await Navigator.push<bool>(
       context,
       MaterialPageRoute<bool>(
@@ -304,7 +306,10 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                 child: GestureDetector(
                   onTap: _showCategoryDialog,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: fieldFill,
                       borderRadius: BorderRadius.circular(12),
@@ -317,7 +322,10 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                           style: TextStyle(color: scheme.onSurface),
                         ),
                         const Spacer(),
-                        Icon(Icons.arrow_drop_down, color: scheme.onSurfaceVariant),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          color: scheme.onSurfaceVariant,
+                        ),
                       ],
                     ),
                   ),
@@ -328,7 +336,10 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                 child: GestureDetector(
                   onTap: _selectTime,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: fieldFill,
                       borderRadius: BorderRadius.circular(12),
@@ -342,7 +353,9 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                           child: Text(
                             _selectedTime == null
                                 ? 'Zaman'
-                                : DateFormat('dd/MM/yyyy').format(_selectedTime!),
+                                : DateFormat(
+                                    'dd/MM/yyyy',
+                                  ).format(_selectedTime!),
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(color: scheme.onSurface),
                           ),
@@ -376,7 +389,10 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: scheme.primary, width: 2),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                   ),
                   onChanged: (value) {
                     _filterAnnouncements();
@@ -391,7 +407,10 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF5A7FCF),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                 ),
                 child: const Text('Ara'),
               ),
@@ -441,13 +460,11 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   }
 
   Widget _buildAnnouncementCard(Announcement announcement) {
-    final dateFormat = DateFormat('d MMMM yyyy');
-    
+    final dateFormat = DateFormat('d MMMM yyyy', 'tr_TR');
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -458,7 +475,8 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                 Icon(announcement.icon, color: announcement.iconColor),
                 const SizedBox(width: 8),
                 Text(
-                  announcement.author, // type bilgisi (Kayıp Eşya / Bulunan Eşya)
+                  announcement
+                      .author, // type bilgisi (Kayıp Eşya / Bulunan Eşya)
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -471,10 +489,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
             const SizedBox(height: 12),
             Text(
               announcement.title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Row(
@@ -531,7 +546,11 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
           children: [
             Row(
               children: [
-                Icon(announcement.icon, size: 20, color: announcement.iconColor),
+                Icon(
+                  announcement.icon,
+                  size: 20,
+                  color: announcement.iconColor,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   announcement.author, // type bilgisi
@@ -563,7 +582,9 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
               children: [
                 const Icon(Icons.calendar_today, size: 16),
                 const SizedBox(width: 8),
-                Text(DateFormat('d MMMM yyyy').format(announcement.date)),
+                Text(
+                  DateFormat('d MMMM yyyy', 'tr_TR').format(announcement.date),
+                ),
               ],
             ),
           ],
@@ -584,9 +605,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
         padding: EdgeInsets.zero,
         children: [
           const DrawerHeader(
-            decoration: BoxDecoration(
-              color: Color(0xFF1E3A8A),
-            ),
+            decoration: BoxDecoration(color: Color(0xFF1E3A8A)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
@@ -641,7 +660,9 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
           ),
           const Divider(),
           ListTile(
-            leading: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            leading: Icon(
+              widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+            ),
             title: Text(widget.isDarkMode ? 'Açık Mod' : 'Koyu Mod'),
             onTap: () {
               widget.onToggleDarkMode();
