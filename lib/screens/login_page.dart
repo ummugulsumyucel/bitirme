@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'register_page.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_navigation.dart';
@@ -19,21 +20,55 @@ class _LoginPageState extends State<LoginPage> {
   bool _loggingIn = false;
   bool _sendingReset = false;
 
+  static const _kRememberMe = 'remember_me';
+  static const _kSavedEmail = 'saved_email';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final remember = prefs.getBool(_kRememberMe) ?? false;
+    if (remember) {
+      final email = prefs.getString(_kSavedEmail) ?? '';
+      if (mounted) {
+        setState(() {
+          _rememberMe = true;
+          _emailController.text = email;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveCredentials(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kRememberMe, true);
+    await prefs.setString(_kSavedEmail, email);
+  }
+
+  Future<void> _clearCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kRememberMe);
+    await prefs.remove(_kSavedEmail);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 800;
-    
+
     return Scaffold(
-      body: isSmallScreen
-          ? _buildMobileLayout()
-          : _buildDesktopLayout(),
+      body: isSmallScreen ? _buildMobileLayout() : _buildDesktopLayout(),
     );
   }
 
   Widget _buildMobileLayout() {
+    final scheme = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       child: Container(
-        color: Colors.white,
+        color: scheme.surface,
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
@@ -43,48 +78,15 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               const SizedBox(height: 40),
               // Logo
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E3A8A),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.menu_book,
-                  color: Colors.lightBlue,
-                  size: 50,
+              Center(
+                child: Image.asset(
+                  'assets/images/logo1.png',
+                  width: 200,
+                  height: 200,
                 ),
               ),
               const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E3A8A),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Column(
-                  children: [
-                    Text(
-                      'KLU UNICONNECT',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      '2025 - 2026',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 12),
-              _firebaseAuthCaption(),
               const SizedBox(height: 28),
               _buildEmailField(),
               const SizedBox(height: 16),
@@ -103,13 +105,14 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildDesktopLayout() {
+    final scheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         // Sol taraf - Form
         Expanded(
           flex: 3,
           child: Container(
-            color: Colors.white,
+            color: scheme.surface,
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(40),
@@ -122,51 +125,13 @@ class _LoginPageState extends State<LoginPage> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // Logo
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E3A8A),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.menu_book,
-                            color: Colors.lightBlue,
-                            size: 60,
-                          ),
+                        Image.asset(
+                          'assets/images/logo1.png',
+                          width: 150,
+                          height: 150,
                         ),
                         const SizedBox(height: 20),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E3A8A),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Column(
-                            children: [
-                              Text(
-                                'KLU UNICONNECT',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              Text(
-                                '2025 - 2026',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                         const SizedBox(height: 12),
-                        _firebaseAuthCaption(),
                         const SizedBox(height: 36),
                         _buildEmailField(),
                         const SizedBox(height: 20),
@@ -194,8 +159,8 @@ class _LoginPageState extends State<LoginPage> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.pink.shade50,
-                  Colors.pink.shade100,
+                  scheme.primaryContainer.withValues(alpha: 0.5),
+                  scheme.secondaryContainer.withValues(alpha: 0.45),
                 ],
               ),
             ),
@@ -205,69 +170,20 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'BACK TO',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E3A8A),
-                      ),
-                    ),
-                    const Text(
-                      'KAMPÜS',
-                      style: TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E3A8A),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'BAĞLAN, PAYLAŞ, KEŞFET!',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1E3A8A),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: scheme.primary,
                       ),
                     ),
                     const SizedBox(height: 40),
-                    const Text(
-                      'KLU UNICONNECT',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E3A8A),
-                      ),
-                    ),
-                    const SizedBox(height: 60),
-                    Container(
-                      width: 150,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurple.shade800,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          const Icon(
-                            Icons.school,
-                            size: 80,
-                            color: Colors.yellow,
-                          ),
-                          Positioned(
-                            top: 20,
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: const BoxDecoration(
-                                color: Colors.yellow,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    Image.asset(
+                      'assets/images/logo1.png',
+                      width: 200,
+                      height: 200,
                     ),
                   ],
                 ),
@@ -279,30 +195,18 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _firebaseAuthCaption() {
-    return Text(
-      'Giriş Firebase Authentication ile yapılır; yalnızca kayıt olduğunuz '
-      'e-posta ve şifre kabul edilir.',
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: 12,
-        height: 1.4,
-        color: Colors.grey.shade700,
-      ),
-    );
-  }
-
   Widget _buildEmailField() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: TextFormField(
         controller: _emailController,
         decoration: InputDecoration(
           hintText: 'E-mail Adresinizi Girin',
-          prefixIcon: const Icon(Icons.person, color: Colors.purple),
+          prefixIcon: Icon(Icons.person, color: scheme.primary),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,
@@ -324,16 +228,17 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildPasswordField() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: TextFormField(
         controller: _passwordController,
         decoration: InputDecoration(
           hintText: 'Şifrenizi Giriniz',
-          prefixIcon: const Icon(Icons.lock, color: Colors.orange),
+          prefixIcon: Icon(Icons.lock, color: scheme.primary),
           suffixIcon: IconButton(
             icon: Icon(
               _obscurePassword ? Icons.visibility : Icons.visibility_off,
@@ -385,7 +290,7 @@ class _LoginPageState extends State<LoginPage> {
           onPressed: (_loggingIn || _sendingReset) ? null : _onForgotPassword,
           child: Text(
             _sendingReset ? 'Gönderiliyor…' : 'Şifremi Unuttum?',
-            style: const TextStyle(color: Color(0xFF1E3A8A)),
+            style: TextStyle(color: Theme.of(context).colorScheme.primary),
           ),
         ),
       ],
@@ -401,23 +306,29 @@ class _LoginPageState extends State<LoginPage> {
             : () async {
                 if (_formKey.currentState!.validate()) {
                   setState(() => _loggingIn = true);
+                  final email = _emailController.text.trim();
                   final err = await AuthService().login(
-                    _emailController.text.trim(),
+                    email,
                     _passwordController.text,
                   );
                   if (!mounted) return;
                   setState(() => _loggingIn = false);
                   if (err == null) {
+                    if (_rememberMe) {
+                      await _saveCredentials(email);
+                    } else {
+                      await _clearCredentials();
+                    }
                     finishLoginOrRegisterFlow(context);
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(err)),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(err)));
                   }
                 }
               },
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5A7FCF),
+          backgroundColor: Theme.of(context).colorScheme.secondary,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
@@ -435,27 +346,64 @@ class _LoginPageState extends State<LoginPage> {
               )
             : const Text(
                 'Giriş Yap',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
   }
 
   Future<void> _onForgotPassword() async {
-    final email = _emailController.text.trim();
+    // Önce e-posta alanındaki değeri al
+    String email = _emailController.text.trim();
+
+    // E-posta boşsa dialog aç
     if (email.isEmpty || !email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Şifre sıfırlama için önce geçerli e-posta adresinizi yazın.',
+      final controller = TextEditingController(text: email);
+      final result = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Şifre Sıfırlama'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Kayıtlı e-posta adresinizi girin. Şifre sıfırlama bağlantısı gönderilecek.',
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.emailAddress,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'E-posta',
+                  hintText: 'ornek@universite.edu.tr',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  prefixIcon: const Icon(Icons.email_outlined),
+                ),
+              ),
+            ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('İptal'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+              child: const Text('Gönder'),
+            ),
+          ],
         ),
       );
-      return;
+      if (result == null || result.isEmpty || !result.contains('@')) return;
+      email = result;
     }
+
+    if (!mounted) return;
     setState(() => _sendingReset = true);
     final err = await AuthService().sendPasswordResetEmail(email);
     if (!mounted) return;
@@ -464,14 +412,14 @@ class _LoginPageState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Şifre sıfırlama bağlantısı e-postanıza gönderildi. Gelen kutunuzu ve spam klasörünü kontrol edin.',
+            'Şifre sıfırlama bağlantısı e-postanıza gönderildi. Spam klasörünü de kontrol edin.',
           ),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 4),
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(err)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     }
   }
 
@@ -484,15 +432,13 @@ class _LoginPageState extends State<LoginPage> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const RegisterPage(),
-              ),
+              MaterialPageRoute(builder: (context) => const RegisterPage()),
             );
           },
-          child: const Text(
+          child: Text(
             'Hesap Oluşturun',
             style: TextStyle(
-              color: Color(0xFF1E3A8A),
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
             ),
           ),

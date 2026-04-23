@@ -13,8 +13,16 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   String? _cachedDisplayName;
+  String? _cachedRole; // 'student' | 'admin' | 'club_leader'
 
   bool get isLoggedIn => _auth.currentUser != null;
+
+  /// Kullanıcının etkinlik ekleme yetkisi var mı (admin veya kulüp başkanı)
+  bool get canAddEvent =>
+      _cachedRole == 'admin' || _cachedRole == 'club_leader';
+
+  /// Kullanıcının rolü
+  String get currentRole => _cachedRole ?? 'student';
 
   String? get currentUserEmail => _auth.currentUser?.email;
 
@@ -63,7 +71,8 @@ class AuthService {
           .collection('users')
           .doc(user.uid)
           .get();
-      final fullName = (doc.data()?['fullName'] as String?)?.trim();
+      final data = doc.data();
+      final fullName = (data?['fullName'] as String?)?.trim();
       if (fullName != null && fullName.isNotEmpty) {
         _cachedDisplayName = fullName;
         final dn = user.displayName?.trim();
@@ -74,9 +83,12 @@ class AuthService {
       } else {
         _cachedDisplayName = user.displayName?.trim();
       }
+      // Rolü cache'le
+      _cachedRole = (data?['role'] as String?)?.trim() ?? 'student';
     } catch (e, st) {
       debugPrint('AuthService._syncUserProfileFromFirestore: $e\n$st');
       _cachedDisplayName = user.displayName?.trim();
+      _cachedRole = 'student';
     }
     final u2 = _auth.currentUser;
     if (u2 != null) await _persistLocalCache(u2);
@@ -169,9 +181,14 @@ class AuthService {
     String password, {
     required String department,
     required String grade,
+    String role = 'student',
   }) async {
     final trimmedEmail = email.trim().toLowerCase();
     final trimmedName = name.trim();
+    // Güvenlik: sadece izin verilen roller kabul edilir
+    final safeRole = ['student', 'club_leader'].contains(role)
+        ? role
+        : 'student';
     User? created;
     try {
       final cred = await _auth.createUserWithEmailAndPassword(
@@ -190,7 +207,7 @@ class AuthService {
           'email': trimmedEmail,
           'department': department,
           'grade': grade,
-          'role': 'student',
+          'role': safeRole,
           'isActive': true,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
@@ -229,6 +246,7 @@ class AuthService {
   Future<void> logout() async {
     await _auth.signOut();
     _cachedDisplayName = null;
+    _cachedRole = null;
     await SessionService.clearUserDocId();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('userEmail');
