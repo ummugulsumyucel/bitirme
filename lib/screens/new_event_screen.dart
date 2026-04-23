@@ -560,6 +560,21 @@ class _NewEventScreenState extends State<NewEventScreen> {
   }
 
   Future<void> _submitEvent() async {
+    // Yetki kontrolü
+    final auth = AuthService();
+    if (!auth.isLoggedIn || !auth.canAddEvent) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Etkinlik eklemek için yetkiniz yok. Sadece admin ve kulüp başkanları etkinlik ekleyebilir.',
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     final title = _titleController.text.trim();
     final place = _placeController.text.trim();
     final description = _descriptionController.text.trim();

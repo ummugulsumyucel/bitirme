@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+
+import '../services/web_file_opener.dart';
 
 import '../services/session_service.dart';
 
@@ -33,6 +34,44 @@ class NoteDetailScreen extends StatelessWidget {
     this.fileUrl,
     this.fileName,
   });
+
+  bool get _hasFile => fileUrl != null && fileUrl!.trim().isNotEmpty;
+
+  Future<void> _openFile(BuildContext context) async {
+    final url = fileUrl?.trim();
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bu not için dosya bağlantısı yok.')),
+      );
+      return;
+    }
+    try {
+      openFileInBrowser(url, fileName: fileName);
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Dosya açılamadı: $e')));
+    }
+  }
+
+  Future<void> _downloadFile(BuildContext context) async {
+    final url = fileUrl?.trim();
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bu not için dosya bağlantısı yok.')),
+      );
+      return;
+    }
+    try {
+      downloadFileInBrowser(url, fileName: fileName);
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('İndirme başlatılamadı: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -211,130 +250,157 @@ class NoteDetailScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: scheme.primary),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                  // Dosya butonları
+                  if (_hasFile) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E3A8A),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          icon: Icon(
-                            Icons.download_outlined,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        icon: const Icon(Icons.visibility_outlined),
+                        label: const Text(
+                          'Dosyayı Görüntüle',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: () => _openFile(context),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: scheme.primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        icon: Icon(
+                          Icons.download_outlined,
+                          color: scheme.primary,
+                        ),
+                        label: Text(
+                          'İndir',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                             color: scheme.primary,
                           ),
-                          label: Text(
-                            'İndir',
+                        ),
+                        onPressed: () => _downloadFile(context),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ] else ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: scheme.outlineVariant),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: scheme.onSurfaceVariant,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Bu nota dosya eklenmemiş.',
                             style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: scheme.primary,
+                              fontSize: 13,
+                              color: scheme.onSurfaceVariant,
                             ),
                           ),
-                          onPressed: () async {
-                            final url = fileUrl?.trim();
-                            if (url == null || url.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Bu not için dosya bağlantısı yok.',
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-                            final uri = Uri.parse(url);
-                            final ok = await launchUrl(
-                              uri,
-                              mode: LaunchMode.externalApplication,
-                            );
-                            if (!context.mounted) return;
-                            if (!ok) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Bağlantı açılamadı.'),
-                                ),
-                              );
-                            }
-                          },
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+
+                  // Kaydet butonu
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF5A7FCF),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      icon: const Icon(Icons.bookmark_outline),
+                      label: const Text(
+                        'Kaydet',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5A7FCF),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      onPressed: () async {
+                        final nid = noteId?.trim();
+                        if (nid == null || nid.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Bu not için kayıt kimliği yok.'),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          icon: const Icon(Icons.bookmark_outline),
-                          label: const Text(
-                            'Kaydet',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          );
+                          return;
+                        }
+                        final uid = await SessionService.ensureUserDocId();
+                        if (!context.mounted) return;
+                        if (uid == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Kaydetmek için giriş yapmalısınız.',
+                              ),
                             ),
-                          ),
-                          onPressed: () async {
-                            final nid = noteId?.trim();
-                            if (nid == null || nid.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Bu not için kayıt kimliği yok.',
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-                            final uid = await SessionService.ensureUserDocId();
-                            if (!context.mounted) return;
-                            if (uid == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Kaydetmek için giriş yapmalısınız.',
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-                            try {
-                              await FirebaseFirestore.instance
-                                  .collection('saved_notes')
-                                  .doc('${uid}_$nid')
-                                  .set({
-                                    'userDocId': uid,
-                                    'noteId': nid,
-                                    'noteTitle': title,
-                                    'course': course,
-                                    'savedAt': FieldValue.serverTimestamp(),
-                                  }, SetOptions(merge: true));
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Not profiline kaydedildi.'),
-                                  backgroundColor: Color(0xFF5A7FCF),
-                                ),
-                              );
-                            } catch (e) {
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Hata: $e')),
-                              );
-                            }
-                          },
-                        ),
-                      ),
-                    ],
+                          );
+                          return;
+                        }
+                        try {
+                          await FirebaseFirestore.instance
+                              .collection('saved_notes')
+                              .doc('${uid}_$nid')
+                              .set({
+                                'userDocId': uid,
+                                'noteId': nid,
+                                'noteTitle': title,
+                                'course': course,
+                                'savedAt': FieldValue.serverTimestamp(),
+                              }, SetOptions(merge: true));
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Not profiline kaydedildi.'),
+                              backgroundColor: Color(0xFF5A7FCF),
+                            ),
+                          );
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('Hata: $e')));
+                        }
+                      },
+                    ),
                   ),
                   const SizedBox(height: 24),
                 ],

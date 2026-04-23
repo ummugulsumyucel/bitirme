@@ -8,6 +8,7 @@ abstract final class UniBrand {
 }
 
 ThemeData uniTheme(Brightness brightness) {
+  final isDark = brightness == Brightness.dark;
   final base = ColorScheme.fromSeed(
     seedColor: UniBrand.primary,
     brightness: brightness,
@@ -16,15 +17,21 @@ ThemeData uniTheme(Brightness brightness) {
   );
 
   final scheme = base.copyWith(
+    surface: isDark ? const Color(0xFF111827) : const Color(0xFFF7F9FD),
+    onSurface: isDark ? const Color(0xFFF3F6FD) : const Color(0xFF111827),
+    onSurfaceVariant: isDark
+        ? const Color(0xFFCDD6EA)
+        : const Color(0xFF4B5563),
     surfaceContainerLowest: brightness == Brightness.light
         ? const Color(0xFFF0F4FC)
-        : const Color(0xFF121826),
+        : const Color(0xFF182133),
     surfaceContainerLow: brightness == Brightness.light
         ? const Color(0xFFE8EEF8)
-        : const Color(0xFF1A2234),
+        : const Color(0xFF212C41),
     surfaceContainer: brightness == Brightness.light
         ? const Color(0xFFE2EAF5)
-        : const Color(0xFF232D42),
+        : const Color(0xFF2A3650),
+    outlineVariant: isDark ? const Color(0xFF45516B) : base.outlineVariant,
   );
 
   final titleStyle = TextStyle(
@@ -39,6 +46,10 @@ ThemeData uniTheme(Brightness brightness) {
     colorScheme: scheme,
     fontFamily: 'Roboto',
     scaffoldBackgroundColor: scheme.surface,
+    textTheme: ThemeData(brightness: brightness).textTheme.apply(
+      bodyColor: scheme.onSurface,
+      displayColor: scheme.onSurface,
+    ),
     appBarTheme: AppBarTheme(
       elevation: 0,
       scrolledUnderElevation: 2,
@@ -54,6 +65,11 @@ ThemeData uniTheme(Brightness brightness) {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: scheme.surfaceContainerLow,
+    ),
+    iconTheme: IconThemeData(color: scheme.onSurfaceVariant),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: UniBrand.accent,
+      foregroundColor: Colors.white,
     ),
     drawerTheme: DrawerThemeData(
       backgroundColor: scheme.surface,
@@ -127,6 +143,8 @@ ThemeData uniTheme(Brightness brightness) {
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: scheme.inverseSurface,
+      contentTextStyle: TextStyle(color: scheme.onInverseSurface),
     ),
     dividerTheme: DividerThemeData(
       color: scheme.outlineVariant.withValues(alpha: 0.6),

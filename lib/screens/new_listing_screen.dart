@@ -493,6 +493,18 @@ class _NewListingScreenState extends State<NewListingScreen> {
       return;
     }
 
+    // Oturum kontrolü
+    final authService = AuthService();
+    if (!authService.isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('İlan yayınlamak için giriş yapman gerekiyor.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
@@ -502,16 +514,33 @@ class _NewListingScreenState extends State<NewListingScreen> {
       String? imageName;
 
       if (_pickedFile != null) {
+        // Web'de bytes kontrolü
+        if (kIsWeb &&
+            (_pickedFile!.bytes == null || _pickedFile!.bytes!.isEmpty)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Dosya okunamadı. Lütfen tekrar seçin.'),
+            ),
+          );
+          setState(() => _isSubmitting = false);
+          return;
+        }
+
+        debugPrint('submitListing: uploading image ${_pickedFile!.name}');
         imageUrl = await uploadNoteFile(_pickedFile!);
+        debugPrint('submitListing: imageUrl=$imageUrl');
+
         if (imageUrl == null) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'Fotoğraf yüklenemedi. Daha küçük bir fotoğraf deneyin.',
+                'Fotoğraf yüklenemedi. Daha küçük bir fotoğraf deneyin veya fotoğrafsız devam edin.',
               ),
+              duration: Duration(seconds: 4),
             ),
           );
+          setState(() => _isSubmitting = false);
           return;
         }
         imageName = _pickedFile!.name;
@@ -541,6 +570,7 @@ class _NewListingScreenState extends State<NewListingScreen> {
       );
       Navigator.pop(context);
     } catch (e) {
+      debugPrint('submitListing error: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

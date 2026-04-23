@@ -43,12 +43,17 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
   ];
 
   Widget _buildSearchBar() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: TextField(
@@ -60,17 +65,17 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
         },
         decoration: InputDecoration(
           hintText: 'Not ara... (başlık, açıklama)',
-          hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
-          prefixIcon: const Icon(
+          hintStyle: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+          prefixIcon: Icon(
             Icons.search,
-            color: Color(0xFF6B7280),
+            color: scheme.onSurfaceVariant,
             size: 20,
           ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.clear,
-                    color: Color(0xFF6B7280),
+                    color: scheme.onSurfaceVariant,
                     size: 20,
                   ),
                   onPressed: () {
@@ -87,7 +92,7 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
             vertical: 12,
           ),
         ),
-        style: const TextStyle(fontSize: 13),
+        style: TextStyle(fontSize: 13, color: scheme.onSurface),
       ),
     );
   }
@@ -100,6 +105,7 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final scroll = SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -119,13 +125,13 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
 
     if (widget.embeddedInShell) {
       return ColoredBox(
-        color: const Color(0xFFF5F5F5),
+        color: scheme.surface,
         child: SizedBox.expand(child: scroll),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: scheme.surface,
       drawer: _buildDrawer(context),
       body: SafeArea(
         child: Column(
@@ -169,6 +175,7 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
   }
 
   Widget _buildFilterChip(String label) {
+    final scheme = Theme.of(context).colorScheme;
     final isActive = _semesterFilter == label;
     return Expanded(
       child: InkWell(
@@ -176,12 +183,10 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF1E3A8A) : Colors.white,
+            color: isActive ? scheme.primary : scheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: isActive
-                  ? const Color(0xFF1E3A8A)
-                  : const Color(0xFFE5E7EB),
+              color: isActive ? scheme.primary : scheme.outlineVariant,
             ),
           ),
           child: Center(
@@ -190,7 +195,7 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: isActive ? Colors.white : const Color(0xFF374151),
+                color: isActive ? scheme.onPrimary : scheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -214,6 +219,7 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
   }
 
   Widget _buildTabChip(String label) {
+    final scheme = Theme.of(context).colorScheme;
     final isActive = _categoryFilter == label;
     return Material(
       color: Colors.transparent,
@@ -223,12 +229,10 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF1E3A8A) : Colors.white,
+            color: isActive ? scheme.primary : scheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: isActive
-                  ? const Color(0xFF1E3A8A)
-                  : const Color(0xFFE5E7EB),
+              color: isActive ? scheme.primary : scheme.outlineVariant,
             ),
           ),
           child: Row(
@@ -237,7 +241,7 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
               Icon(
                 Icons.book_outlined,
                 size: 16,
-                color: isActive ? Colors.white : const Color(0xFF6B7280),
+                color: isActive ? scheme.onPrimary : scheme.onSurfaceVariant,
               ),
               const SizedBox(height: 2, width: 6),
               Text(
@@ -245,7 +249,7 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: isActive ? Colors.white : const Color(0xFF374151),
+                  color: isActive ? scheme.onPrimary : scheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -480,37 +484,10 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            height: 70,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF9FAFB),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        fileName != null && fileName.isNotEmpty
-                            ? _shortFileName(fileName)
-                            : 'Dosya eklenmedi',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                          color: Color(0xFF4B5563),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          _buildNoteCardBanner(
+            fileUrl: fileUrl,
+            fileName: fileName,
+            tagColor: tagColor,
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -606,7 +583,9 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
                   width: double.infinity,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF1E3A8A)),
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
                       ),
@@ -633,12 +612,12 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
                         ),
                       );
                     },
-                    child: const Text(
+                    child: Text(
                       'Detayları Gör',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1E3A8A),
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -656,10 +635,125 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
     return '${name.substring(0, 12)}…${name.substring(name.length - 8)}';
   }
 
+  bool _isImageUrl(String? url) {
+    if (url == null) return false;
+    if (url.startsWith('data:image/')) return true;
+    final lower = url.toLowerCase();
+    return lower.endsWith('.png') ||
+        lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.webp');
+  }
+
+  bool _isPdfUrl(String? url) {
+    if (url == null) return false;
+    if (url.startsWith('data:application/pdf')) return true;
+    return url.toLowerCase().endsWith('.pdf');
+  }
+
+  Widget _buildNoteCardBanner({
+    String? fileUrl,
+    String? fileName,
+    required Color tagColor,
+  }) {
+    final hasFile = fileUrl != null && fileUrl.isNotEmpty;
+    final isImage = _isImageUrl(fileUrl);
+    final isPdf = _isPdfUrl(fileUrl);
+
+    if (hasFile && isImage) {
+      // Görsel önizleme
+      return ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        child: SizedBox(
+          height: 140,
+          width: double.infinity,
+          child: Image.network(
+            fileUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildFileBanner(
+              icon: Icons.image_not_supported_outlined,
+              label: fileName ?? 'Görsel',
+              color: tagColor,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (hasFile && isPdf) {
+      // PDF banner
+      return _buildFileBanner(
+        icon: Icons.picture_as_pdf_outlined,
+        label: fileName != null && fileName.isNotEmpty
+            ? _shortFileName(fileName)
+            : 'PDF Dosyası',
+        color: const Color(0xFFEF4444),
+        bgColor: const Color(0xFFFEF2F2),
+      );
+    }
+
+    if (hasFile) {
+      // Diğer dosya türleri
+      return _buildFileBanner(
+        icon: Icons.insert_drive_file_outlined,
+        label: fileName != null && fileName.isNotEmpty
+            ? _shortFileName(fileName)
+            : 'Dosya',
+        color: tagColor,
+      );
+    }
+
+    // Dosya yok
+    return _buildFileBanner(
+      icon: Icons.notes_outlined,
+      label: 'Dosya eklenmedi',
+      color: const Color(0xFF9CA3AF),
+      bgColor: const Color(0xFFF9FAFB),
+    );
+  }
+
+  Widget _buildFileBanner({
+    required IconData icon,
+    required String label,
+    required Color color,
+    Color? bgColor,
+  }) {
+    return Container(
+      height: 100,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: bgColor ?? color.withValues(alpha: 0.08),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 32, color: color),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeader(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       height: 60,
-      color: const Color(0xFF1E3A8A),
+      color: scheme.primary,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -668,16 +762,16 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
             children: [
               Builder(
                 builder: (context) => IconButton(
-                  icon: const Icon(Icons.menu, color: Colors.white),
+                  icon: Icon(Icons.menu, color: scheme.onPrimary),
                   onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
               ),
-              const Icon(Icons.school, color: Colors.white, size: 28),
+              Icon(Icons.school, color: scheme.onPrimary, size: 28),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'UniConnect',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: scheme.onPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -689,7 +783,7 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
               widget.isDarkMode
                   ? Icons.light_mode_outlined
                   : Icons.dark_mode_outlined,
-              color: Colors.white,
+              color: scheme.onPrimary,
             ),
             onPressed: widget.onToggleTheme ?? () {},
           ),

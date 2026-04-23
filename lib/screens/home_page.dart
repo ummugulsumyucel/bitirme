@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import '../theme/uni_theme.dart';
 import 'login_page.dart';
 import 'register_page.dart';
@@ -10,6 +11,7 @@ import 'events_screen.dart';
 import 'profile_screen.dart';
 import 'announcements_page.dart';
 import 'notes_feed_screen.dart';
+import 'event_detail_screen.dart';
 import '../services/auth_service.dart';
 import '../services/klu_clubs_service.dart';
 import '../services/club_logo_service.dart';
@@ -57,7 +59,7 @@ class HomePage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(context),
             Expanded(child: content),
           ],
         ),
@@ -65,18 +67,19 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
-      color: const Color(0xFF1E3A8A),
+      color: scheme.primary,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          const Icon(Icons.school, color: Colors.white),
+          Icon(Icons.school, color: scheme.onPrimary),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             'UniConnect',
             style: TextStyle(
-              color: Colors.white,
+              color: scheme.onPrimary,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
@@ -85,13 +88,13 @@ class HomePage extends StatelessWidget {
           IconButton(
             icon: Icon(
               isDarkMode ? Icons.light_mode : Icons.dark_mode,
-              color: Colors.white,
+              color: scheme.onPrimary,
             ),
             onPressed: onToggleDarkMode,
           ),
           Builder(
             builder: (context) => IconButton(
-              icon: const Icon(Icons.menu, color: Colors.white),
+              icon: Icon(Icons.menu, color: scheme.onPrimary),
               onPressed: () {
                 Scaffold.of(context).openDrawer();
               },
@@ -104,97 +107,180 @@ class HomePage extends StatelessWidget {
 
   Widget _buildHeroSection(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            scheme.primaryContainer.withValues(alpha: 0.65),
-            scheme.tertiaryContainer.withValues(alpha: 0.5),
-            scheme.secondaryContainer.withValues(alpha: 0.4),
-          ],
-        ),
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: scheme.primary,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: scheme.primary.withValues(alpha: 0.35),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.school_rounded,
-                  color: scheme.onPrimary,
-                  size: 30,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Text(
-                'UniConnect',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: scheme.primary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Akademik ve sosyal yaşamınızı kolayca yönetin!',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: scheme.onPrimaryContainer,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Tüm kampüs hayatınız\ntek bir yerde!',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              height: 1.15,
-              color: scheme.primary,
-              letterSpacing: -0.8,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            'Ders programınız, etkinlikler, duyurular ve ilanlar… Hepsi cebinizde; ihtiyacınız her an, her yerde.',
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.45,
-              color: scheme.onSurface.withValues(alpha: 0.82),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Kampüs hayatını kaçırma: dersleri takip et, etkinliklerden haberdar ol, yeni arkadaşlıklar kur.',
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.45,
-              color: scheme.onSurface.withValues(alpha: 0.75),
-            ),
-          ),
+
+    final List<Map<String, dynamic>> bannerItems = [
+      {
+        'title': 'Tüm kampüs hayatınız\ntek bir yerde!',
+        'subtitle': 'Akademik ve sosyal yaşamınızı kolayca yönetin!',
+        'description':
+            'Ders programınız, etkinlikler, duyurular ve ilanlar… Hepsi cebinizde.',
+        'icon': Icons.dashboard_rounded,
+        'gradient': [
+          scheme.primaryContainer.withValues(alpha: 0.65),
+          scheme.tertiaryContainer.withValues(alpha: 0.5),
+          scheme.secondaryContainer.withValues(alpha: 0.4),
         ],
+      },
+      {
+        'title': 'Kampüs hayatını\nkaçırma!',
+        'subtitle': 'Etkinliklerden haberdar ol',
+        'description':
+            'Dersleri takip et, etkinliklerden haberdar ol, yeni arkadaşlıklar kur.',
+        'icon': Icons.celebration_rounded,
+        'gradient': [
+          scheme.secondaryContainer.withValues(alpha: 0.65),
+          scheme.primaryContainer.withValues(alpha: 0.5),
+          scheme.tertiaryContainer.withValues(alpha: 0.4),
+        ],
+      },
+      {
+        'title': 'UniConnect ile\nbağlı kal!',
+        'subtitle': 'Kampüs topluluğunun bir parçası ol',
+        'description':
+            'Kulüpleri keşfet, etkinliklere katıl, notlarını paylaş.',
+        'icon': Icons.groups_rounded,
+        'gradient': [
+          scheme.tertiaryContainer.withValues(alpha: 0.65),
+          scheme.secondaryContainer.withValues(alpha: 0.5),
+          scheme.primaryContainer.withValues(alpha: 0.4),
+        ],
+      },
+    ];
+
+    return CarouselSlider(
+      options: CarouselOptions(
+        height: 220,
+        viewportFraction: 1.0,
+        autoPlay: true,
+        autoPlayInterval: const Duration(seconds: 5),
+        autoPlayAnimationDuration: const Duration(milliseconds: 800),
+        autoPlayCurve: Curves.fastOutSlowIn,
+        enlargeCenterPage: false,
       ),
+      items: bannerItems.map((item) {
+        return Builder(
+          builder: (BuildContext context) {
+            return Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: item['gradient'] as List<Color>,
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Row(
+                children: [
+                  // Sol taraf - İçerik
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: scheme.primary,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: scheme.primary.withValues(
+                                      alpha: 0.35,
+                                    ),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.school_rounded,
+                                color: scheme.onPrimary,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Flexible(
+                              child: Text(
+                                'UniConnect',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: scheme.onSurface,
+                                  letterSpacing: -0.5,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          item['subtitle'] as String,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          item['title'] as String,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            height: 1.15,
+                            color: scheme.onSurface,
+                            letterSpacing: -0.8,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          item['description'] as String,
+                          style: TextStyle(
+                            fontSize: 10,
+                            height: 1.4,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Sağ taraf - Büyük İkon
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      height: 160,
+                      decoration: BoxDecoration(
+                        color: scheme.primaryContainer.withValues(alpha: 0.32),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          item['icon'] as IconData,
+                          size: 90,
+                          color: scheme.onPrimaryContainer.withValues(alpha: 0.88),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      }).toList(),
     );
   }
 
@@ -223,18 +309,10 @@ class HomePage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: scheme.primary,
+                  color: scheme.onSurface,
                 ),
               ),
             ],
-          ),
-        ),
-        // Alt başlık
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Text(
-            'Öne Çıkan Etkinlikler',
-            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
           ),
         ),
 
@@ -312,7 +390,10 @@ class HomePage extends StatelessWidget {
                 children: [
                   for (int i = 0; i < events.length; i++) ...[
                     if (i > 0) const SizedBox(height: 12),
-                    _buildEventCard(context, events[i].data()),
+                    _buildEventCard(context, {
+                      ...events[i].data(),
+                      'id': events[i].id,
+                    }),
                   ],
                   const SizedBox(
                     height: 32,
@@ -333,132 +414,157 @@ class HomePage extends StatelessWidget {
     final date = (eventData['date'] as String?)?.trim() ?? '';
     final time = (eventData['time'] as String?)?.trim() ?? '';
     final category = (eventData['category'] as String?)?.trim() ?? '';
+    final eventId = eventData['id'] as String?;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            scheme.primary,
-            Color.lerp(scheme.primary, const Color(0xFF0F1729), 0.25)!,
-          ],
-        ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: eventId != null
+            ? () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EventDetailScreen(
+                      eventId: eventId,
+                      title: title,
+                      date: date,
+                      place: place,
+                      time: time,
+                      onToggleTheme: onToggleDarkMode,
+                      isDarkMode: isDarkMode,
+                    ),
+                  ),
+                );
+              }
+            : null,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.primary.withValues(alpha: 0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Sol taraf - Icon
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: scheme.onPrimary.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              _getEventIcon(category),
-              color: scheme.onPrimary,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Sağ taraf - İçerik
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Başlık
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: scheme.onPrimary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                // Kategori
-                if (category.isNotEmpty)
-                  Text(
-                    category,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: scheme.onPrimary.withValues(alpha: 0.75),
-                    ),
-                  ),
-                const SizedBox(height: 10),
-                // Yer
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on_rounded,
-                      size: 16,
-                      color: scheme.onPrimary.withValues(alpha: 0.85),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        place.isNotEmpty ? place : 'Yer belirtilmemiş',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: scheme.onPrimary.withValues(alpha: 0.9),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                // Tarih ve Saat
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today_rounded,
-                      size: 16,
-                      color: scheme.onPrimary.withValues(alpha: 0.85),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      date.isNotEmpty ? date : 'Tarih belirtilmemiş',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: scheme.onPrimary.withValues(alpha: 0.9),
-                      ),
-                    ),
-                    if (time.isNotEmpty) ...[
-                      const SizedBox(width: 16),
-                      Icon(
-                        Icons.access_time_rounded,
-                        size: 16,
-                        color: scheme.onPrimary.withValues(alpha: 0.85),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        time,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: scheme.onPrimary.withValues(alpha: 0.9),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                scheme.primary,
+                scheme.secondary,
               ],
             ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: scheme.primary.withValues(alpha: 0.25),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-        ],
+          child: Row(
+            children: [
+              // Sol taraf - Icon
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: scheme.onPrimary.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  _getEventIcon(category),
+                  color: scheme.onPrimary,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Sağ taraf - İçerik
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Başlık
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: scheme.onPrimary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    // Kategori
+                    if (category.isNotEmpty)
+                      Text(
+                        category,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: scheme.onPrimary.withValues(alpha: 0.75),
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                    // Yer
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_rounded,
+                          size: 16,
+                          color: scheme.onPrimary.withValues(alpha: 0.85),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            place.isNotEmpty ? place : 'Yer belirtilmemiş',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: scheme.onPrimary.withValues(alpha: 0.9),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // Tarih ve Saat
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today_rounded,
+                          size: 16,
+                          color: scheme.onPrimary.withValues(alpha: 0.85),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          date.isNotEmpty ? date : 'Tarih belirtilmemiş',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: scheme.onPrimary.withValues(alpha: 0.9),
+                          ),
+                        ),
+                        if (time.isNotEmpty) ...[
+                          const SizedBox(width: 16),
+                          Icon(
+                            Icons.access_time_rounded,
+                            size: 16,
+                            color: scheme.onPrimary.withValues(alpha: 0.85),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            time,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: scheme.onPrimary.withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -512,7 +618,7 @@ class HomePage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: scheme.primary,
+                  color: scheme.onSurface,
                 ),
               ),
             ],
@@ -636,7 +742,7 @@ class HomePage extends StatelessWidget {
                       '${news.date ?? ''} · ${news.views ?? '0 okunma'}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -661,7 +767,7 @@ class HomePage extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             scheme.primary,
-            Color.lerp(scheme.primary, Colors.black, 0.2)!,
+            scheme.secondary,
           ],
         ),
         borderRadius: BorderRadius.circular(20),
@@ -710,27 +816,12 @@ class HomePage extends StatelessWidget {
 
                   return Column(
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // Sol: istatistikler
-                          _buildStatistic(
-                            context,
-                            Icons.people_alt_rounded,
-                            '4.740',
-                            'Öğrenci',
-                          ),
-                          const SizedBox(width: 14),
-                          _buildStatistic(
-                            context,
-                            Icons.event_available_rounded,
-                            '565',
-                            'Etkinlik',
-                          ),
-                          const Spacer(),
-                          // Sağ: arama kutusu
-                          SizedBox(
-                            width: 180,
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final compact = constraints.maxWidth < 380;
+
+                          final searchField = SizedBox(
+                            width: compact ? double.infinity : 180,
                             height: 32,
                             child: TextField(
                               onChanged: (v) =>
@@ -777,8 +868,60 @@ class HomePage extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          );
+
+                          if (compact) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildStatistic(
+                                        context,
+                                        Icons.people_alt_rounded,
+                                        '4.740',
+                                        'Öğrenci',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _buildStatistic(
+                                        context,
+                                        Icons.event_available_rounded,
+                                        '565',
+                                        'Etkinlik',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                searchField,
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              _buildStatistic(
+                                context,
+                                Icons.people_alt_rounded,
+                                '4.740',
+                                'Öğrenci',
+                              ),
+                              const SizedBox(width: 14),
+                              _buildStatistic(
+                                context,
+                                Icons.event_available_rounded,
+                                '565',
+                                'Etkinlik',
+                              ),
+                              const Spacer(),
+                              searchField,
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 10),
                       SizedBox(

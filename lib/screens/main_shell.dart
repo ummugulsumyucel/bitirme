@@ -187,15 +187,16 @@ class _MainShellState extends State<MainShell> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
-                        color: scheme.onPrimary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(16),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(32),
                       ),
-                      child: Icon(
-                        Icons.school_rounded,
-                        color: scheme.onPrimary,
-                        size: 36,
+                      padding: const EdgeInsets.all(6),
+                      child: Image.asset(
+                        'assets/images/logo1.png',
+                        fit: BoxFit.contain,
                       ),
                     ),
                     const SizedBox(height: 16),

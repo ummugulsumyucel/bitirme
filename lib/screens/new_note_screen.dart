@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
@@ -32,6 +34,7 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
   String _selectedSemester = '1. Sınıf';
   String _selectedType = 'Ders Notu';
   bool _isSubmitting = false;
+  String? _submitStatus;
   PlatformFile? _pickedFile;
   bool _isPickingFile = false;
 
@@ -158,6 +161,16 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                           ),
                         ),
                       ),
+                      if (_isSubmitting && _submitStatus != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _submitStatus!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF666666),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -505,6 +518,20 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
   }
 
   Future<void> _submitNote() async {
+    if (_isSubmitting) return;
+
+    // Oturum kontrolü
+    final authService = AuthService();
+    if (!authService.isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Not paylaşmak için giriş yapman gerekiyor.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     final course = _courseController.text.trim();
     final title = _titleController.text.trim();
     final description = _descriptionController.text.trim();
@@ -522,76 +549,137 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
 
     setState(() {
       _isSubmitting = true;
+      _submitStatus = _pickedFile != null
+          ? 'Dosya yukleniyor...'
+          : 'Not kaydediliyor...';
     });
 
     try {
-      String? fileUrl;
-      String? fileName;
-      String? fileMime;
-
-      if (_pickedFile != null) {
-        fileUrl = await uploadNoteFile(_pickedFile!);
-        if (fileUrl == null) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Dosya yüklenemedi. Daha küçük bir dosya deneyin veya tekrar seçin.',
-              ),
-            ),
-          );
-          return;
-        }
-        fileName = _pickedFile!.name;
-        final ext = _pickedFile!.extension?.toLowerCase();
-        fileMime = switch (ext) {
-          'pdf' => 'application/pdf',
-          'png' => 'image/png',
-          'jpg' => 'image/jpeg',
-          'jpeg' => 'image/jpeg',
-          'webp' => 'image/webp',
-          _ => null,
-        };
-      }
-
-      final uploader = await _resolveUploader();
-
-      await FirebaseFirestore.instance.collection('notes').add({
-        'course': course,
-        'title': title,
-        'description': description,
-        'department': department,
-        'semester': _selectedSemester,
-        'type': _selectedType,
-        'uploaderName': uploader.name,
-        'uploaderUserDocId': uploader.userDocId,
-        'fileUrl': fileUrl,
-        'fileName': fileName,
-        'fileMimeType': fileMime,
-        'ratingAvg': 0.0,
-        'ratingCount': 0,
-        'downloadCount': 0,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await _submitNoteCore(
+        course: course,
+        title: title,
+        description: description,
+        department: department,
+      ).timeout(const Duration(seconds: 70));
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Not başarıyla paylaşıldı.')),
       );
       Navigator.pop(context);
-    } catch (e) {
+    } on TimeoutException {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Bir hata oluştu: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Yükleme zaman aşımına uğradı. İnternet bağlantını kontrol edip tekrar dene.',
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('_submitNote error: $e');
+      // Hata mesajı zaten _submitNoteCore içinde gösterildi
     } finally {
       if (mounted) {
         setState(() {
           _isSubmitting = false;
+          _submitStatus = null;
         });
       }
     }
+  }
+
+  Future<void> _submitNoteCore({
+    required String course,
+    required String title,
+    required String description,
+    required String department,
+  }) async {
+    String? fileUrl;
+    String? fileName;
+    String? fileMime;
+
+    if (_pickedFile != null) {
+      // Web'de bytes null ise hata ver
+      if (kIsWeb &&
+          (_pickedFile!.bytes == null || _pickedFile!.bytes!.isEmpty)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Dosya okunamadı. Lütfen dosyayı tekrar seçin.'),
+          ),
+        );
+        throw Exception('File bytes are null');
+      }
+
+      try {
+        fileUrl = await uploadNoteFile(
+          _pickedFile!,
+        ).timeout(const Duration(seconds: 45));
+      } catch (e) {
+        debugPrint('uploadNoteFile error: $e');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Dosya yuklenemedi: $e'),
+            duration: const Duration(seconds: 6),
+          ),
+        );
+        rethrow;
+      }
+
+      if (fileUrl == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Dosya yuklenemedi. Internetini kontrol edip yeniden dene.',
+            ),
+          ),
+        );
+        throw Exception('File upload returned null URL');
+      }
+      fileName = _pickedFile!.name;
+      final ext = _pickedFile!.extension?.toLowerCase();
+      fileMime = switch (ext) {
+        'pdf' => 'application/pdf',
+        'png' => 'image/png',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'webp' => 'image/webp',
+        _ => null,
+      };
+    }
+
+    if (mounted) {
+      setState(() => _submitStatus = 'Not veritabanına kaydediliyor...');
+    }
+    final uploader = await _resolveUploader().timeout(
+      const Duration(seconds: 12),
+      onTimeout: () => (name: 'Öğrenci', userDocId: null),
+    );
+
+    await FirebaseFirestore.instance
+        .collection('notes')
+        .add({
+          'course': course,
+          'title': title,
+          'description': description,
+          'department': department,
+          'semester': _selectedSemester,
+          'type': _selectedType,
+          'uploaderName': uploader.name,
+          'uploaderUserDocId': uploader.userDocId,
+          'fileUrl': fileUrl,
+          'fileName': fileName,
+          'fileMimeType': fileMime,
+          'ratingAvg': 0.0,
+          'ratingCount': 0,
+          'downloadCount': 0,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        })
+        .timeout(const Duration(seconds: 20));
   }
 
   Widget _buildDrawer(BuildContext context) {

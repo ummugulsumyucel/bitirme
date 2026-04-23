@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../services/auth_service.dart';
 import 'event_detail_screen.dart';
 import 'new_event_screen.dart';
 
@@ -135,6 +136,7 @@ class _EventsScreenState extends State<EventsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final scroll = SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -154,17 +156,17 @@ class _EventsScreenState extends State<EventsScreen> {
 
     if (widget.embeddedInShell) {
       return ColoredBox(
-        color: const Color(0xFFF5F5F5),
+        color: scheme.surface,
         child: SizedBox.expand(child: scroll),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: scheme.surface,
       appBar: AppBar(
         title: const Text('Etkinlikler'),
-        backgroundColor: const Color(0xFF1E3A8A),
-        foregroundColor: Colors.white,
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
         elevation: 0,
       ),
       body: scroll,
@@ -172,6 +174,7 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Widget _buildSearchFilters() {
+    final scheme = Theme.of(context).colorScheme;
     final categoryLabel = _eventCategory == 'Tümü'
         ? 'Kategori Seç'
         : _eventCategory;
@@ -180,7 +183,7 @@ class _EventsScreenState extends State<EventsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -189,7 +192,7 @@ class _EventsScreenState extends State<EventsScreen> {
             children: [
               Expanded(
                 child: Material(
-                  color: const Color(0xFFF3F4F6),
+                  color: scheme.surfaceContainer,
                   borderRadius: BorderRadius.circular(12),
                   child: InkWell(
                     onTap: () => _showFilterSheet(
@@ -209,16 +212,16 @@ class _EventsScreenState extends State<EventsScreen> {
                               child: Text(
                                 categoryLabel,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF6B7280),
+                                  color: scheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.keyboard_arrow_down_rounded,
                               size: 18,
-                              color: Color(0xFF6B7280),
+                              color: scheme.onSurfaceVariant,
                             ),
                           ],
                         ),
@@ -230,7 +233,7 @@ class _EventsScreenState extends State<EventsScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Material(
-                  color: const Color(0xFFF3F4F6),
+                  color: scheme.surfaceContainer,
                   borderRadius: BorderRadius.circular(12),
                   child: InkWell(
                     onTap: () => _showFilterSheet(
@@ -250,16 +253,16 @@ class _EventsScreenState extends State<EventsScreen> {
                               child: Text(
                                 timeLabel,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF6B7280),
+                                  color: scheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.access_time_rounded,
                               size: 18,
-                              color: Color(0xFF6B7280),
+                              color: scheme.onSurfaceVariant,
                             ),
                           ],
                         ),
@@ -278,20 +281,20 @@ class _EventsScreenState extends State<EventsScreen> {
                 child: TextField(
                   controller: _searchController,
                   onChanged: (_) => setState(() {}),
-                  style: const TextStyle(fontSize: 12),
+                  style: TextStyle(fontSize: 12, color: scheme.onSurface),
                   decoration: InputDecoration(
                     hintText: 'Etkinlik Ara...',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF9CA3AF),
+                      color: scheme.onSurfaceVariant,
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.search,
                       size: 18,
-                      color: Color(0xFF9CA3AF),
+                      color: scheme.onSurfaceVariant,
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFF3F4F6),
+                    fillColor: scheme.surfaceContainer,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -309,7 +312,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 height: 40,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5A7FCF),
+                    backgroundColor: scheme.secondary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -330,11 +333,19 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Widget _buildAddEventButton(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final auth = AuthService();
+
+    // Sadece admin veya kulüp başkanı görebilir
+    if (!auth.isLoggedIn || !auth.canAddEvent) {
+      return const SizedBox.shrink();
+    }
+
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5A7FCF),
+          backgroundColor: scheme.secondary,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -362,13 +373,14 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Widget _buildEventsList(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance.collection('events').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Text(
             'Etkinlikler yuklenirken bir hata olustu: ${snapshot.error}',
-            style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+            style: TextStyle(color: scheme.error, fontSize: 13),
           );
         }
 
@@ -390,12 +402,12 @@ class _EventsScreenState extends State<EventsScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: scheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text(
+            child: Text(
               'Henuz etkinlik yok. Ilk etkinligi sen ekleyebilirsin.',
-              style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
             ),
           );
         }
@@ -409,12 +421,12 @@ class _EventsScreenState extends State<EventsScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: scheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text(
+            child: Text(
               'Bu filtrelere uygun etkinlik yok. Filtreleri veya aramayı değiştir.',
-              style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
             ),
           );
         }
@@ -543,12 +555,17 @@ class _EventsScreenState extends State<EventsScreen> {
     required LinearGradient background,
     required IconData icon,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -567,7 +584,7 @@ class _EventsScreenState extends State<EventsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(icon, size: 40, color: const Color(0xFF111827)),
+                Icon(icon, size: 40, color: scheme.onSurface),
                 if (label.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -575,7 +592,7 @@ class _EventsScreenState extends State<EventsScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: labelColor.withOpacity(0.12),
+                      color: labelColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
@@ -597,22 +614,22 @@ class _EventsScreenState extends State<EventsScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
+                    color: scheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.event, size: 14, color: Color(0xFF6B7280)),
+                    Icon(Icons.event, size: 14, color: scheme.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Text(
                       date,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF6B7280),
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -620,17 +637,17 @@ class _EventsScreenState extends State<EventsScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.place_outlined,
                       size: 14,
-                      color: Color(0xFF6B7280),
+                      color: scheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       place,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF6B7280),
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -638,17 +655,17 @@ class _EventsScreenState extends State<EventsScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.access_time,
                       size: 14,
-                      color: Color(0xFF6B7280),
+                      color: scheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       time,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF6B7280),
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -658,7 +675,7 @@ class _EventsScreenState extends State<EventsScreen> {
                   width: double.infinity,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF1E3A8A)),
+                      side: BorderSide(color: scheme.primary),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
                       ),
