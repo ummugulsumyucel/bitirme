@@ -13,6 +13,7 @@ import 'notes_feed_screen.dart';
 import 'profile_screen.dart';
 import 'register_page.dart';
 import 'suggestion_complaint_screen.dart';
+import 'chatbot_screen.dart';
 
 /// Tek scaffold: AppBar + Drawer + alt gezinme; sekmeler IndexedStack ile durumu korur.
 class MainShell extends StatefulWidget {
@@ -109,6 +110,8 @@ class _MainShellState extends State<MainShell> {
         ],
       ),
       drawer: _buildDrawer(context),
+      floatingActionButton: _buildChatFab(context),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: IndexedStack(
         index: _index,
         children: [
@@ -144,6 +147,45 @@ class _MainShellState extends State<MainShell> {
         ],
       ),
       bottomNavigationBar: _buildBottomNav(context),
+    );
+  }
+
+  Widget _buildChatFab(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [scheme.primary, scheme.secondary],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: 0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const ChatbotScreen(),
+            );
+          },
+          child: Icon(Icons.auto_awesome, color: scheme.onPrimary, size: 28),
+        ),
+      ),
     );
   }
 
