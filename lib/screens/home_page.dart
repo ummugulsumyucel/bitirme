@@ -1,9 +1,9 @@
-// GIT_TEST_999
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../theme/uni_theme.dart';
+import '../widgets/common_drawer.dart';
 import 'login_page.dart';
 import 'register_page.dart';
 import 'calendar_page.dart';
@@ -55,7 +55,11 @@ class HomePage extends StatelessWidget {
     }
 
     return Scaffold(
-      drawer: _buildDrawer(context),
+      drawer: CommonDrawer(
+        onToggleTheme: onToggleDarkMode,
+        isDarkMode: isDarkMode,
+        selectedPage: 'home',
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -270,7 +274,9 @@ class HomePage extends StatelessWidget {
                         child: Icon(
                           item['icon'] as IconData,
                           size: 90,
-                          color: scheme.onPrimaryContainer.withValues(alpha: 0.88),
+                          color: scheme.onPrimaryContainer.withValues(
+                            alpha: 0.88,
+                          ),
                         ),
                       ),
                     ),
@@ -444,10 +450,7 @@ class HomePage extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                scheme.primary,
-                scheme.secondary,
-              ],
+              colors: [scheme.primary, scheme.secondary],
             ),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
@@ -765,10 +768,7 @@ class HomePage extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            scheme.primary,
-            scheme.secondary,
-          ],
+          colors: [scheme.primary, scheme.secondary],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -1124,185 +1124,6 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context) {
-    final authService = AuthService();
-    final isLoggedIn = authService.isLoggedIn;
-
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(color: Color(0xFF1E3A8A)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                const Icon(Icons.school, color: Colors.white, size: 48),
-                const SizedBox(height: 8),
-                const Text(
-                  'UniConnect',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (isLoggedIn) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    authService.currentUserName ?? 'Kullanıcı',
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Ana Sayfa'),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.calendar_today),
-            title: const Text('Etkinlikler'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EventsScreen(
-                    embeddedInShell: false,
-                    onToggleTheme: onToggleDarkMode,
-                    isDarkMode: isDarkMode,
-                  ),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.calendar_month),
-            title: const Text('Takvim'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CalendarPage()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Profilim'),
-            onTap: () {
-              Navigator.pop(context);
-              if (!isLoggedIn) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProfileScreen(
-                      embeddedInShell: false,
-                      onToggleTheme: onToggleDarkMode,
-                      isDarkMode: isDarkMode,
-                    ),
-                  ),
-                );
-              }
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.campaign),
-            title: const Text('İlanlar'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AnnouncementsPage(
-                    onToggleDarkMode: onToggleDarkMode,
-                    isDarkMode: isDarkMode,
-                  ),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.note),
-            title: const Text('Notlar'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      const NotesFeedScreen(embeddedInShell: false),
-                ),
-              );
-            },
-          ),
-          const Divider(),
-          if (!isLoggedIn) ...[
-            ListTile(
-              leading: const Icon(Icons.login),
-              title: const Text('Giriş Yap'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_add),
-              title: const Text('Kayıt Ol'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const RegisterPage()),
-                );
-              },
-            ),
-          ] else ...[
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Çıkış Yap'),
-              onTap: () async {
-                Navigator.pop(context);
-                await authService.logout();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Başarıyla çıkış yapıldı'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
-            ),
-          ],
-          const Divider(),
-          ListTile(
-            leading: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
-            title: Text(isDarkMode ? 'Açık Mod' : 'Koyu Mod'),
-            onTap: () {
-              onToggleDarkMode();
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
     );
   }
 }

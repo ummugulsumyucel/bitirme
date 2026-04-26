@@ -315,6 +315,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 12),
                       _buildMyEventsSection(_userDocId!),
                       const SizedBox(height: 12),
+                      _buildMyPersonalEventsSection(_userDocId!),
+                      const SizedBox(height: 12),
                       _buildMyListingsSection(_userDocId!),
                       const SizedBox(height: 12),
                       _buildMyNotesSection(_userDocId!),
@@ -711,6 +713,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return '${dt.day}.${dt.month}.${dt.year}';
     }
     return null;
+  }
+
+  Widget _buildMyPersonalEventsSection(String userDocId) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('personal_events')
+          .where('userId', isEqualTo: userDocId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final docs = [...(snapshot.data?.docs ?? [])];
+        if (docs.isEmpty) return const SizedBox.shrink();
+        docs.sort((a, b) {
+          final ta = a.data()['createdAt'];
+          final tb = b.data()['createdAt'];
+          final ma = ta is Timestamp ? ta.millisecondsSinceEpoch : 0;
+          final mb = tb is Timestamp ? tb.millisecondsSinceEpoch : 0;
+          return mb.compareTo(ma);
+        });
+        return _buildSectionCard(
+          title: 'Kişisel Etkinliklerim',
+          trailing: _buildBadge('${docs.length} kayıt'),
+          child: Column(
+            children: List.generate(docs.length, (i) {
+              final d = docs[i].data();
+              return Padding(
+                padding: EdgeInsets.only(bottom: i < docs.length - 1 ? 8 : 0),
+                child: _buildEventItem(
+                  title: (d['title'] as String?) ?? 'Etkinlik',
+                  subtitle: (d['place'] as String?) ?? '',
+                  date: (d['date'] as String?) ?? '',
+                ),
+              );
+            }),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildMyListingsSection(String userDocId) {

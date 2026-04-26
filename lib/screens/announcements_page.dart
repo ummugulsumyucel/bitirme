@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../services/auth_service.dart';
+import '../widgets/common_drawer.dart';
 import 'login_page.dart';
 import 'new_listing_screen.dart';
 
@@ -243,7 +244,11 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
     }
 
     return Scaffold(
-      drawer: _buildDrawer(),
+      drawer: CommonDrawer(
+        onToggleTheme: widget.onToggleDarkMode,
+        isDarkMode: widget.isDarkMode,
+        selectedPage: 'announcements',
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -770,81 +775,6 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Kapat'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDrawer() {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(color: Color(0xFF1E3A8A)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Icon(Icons.school, color: Colors.white, size: 48),
-                SizedBox(height: 8),
-                Text(
-                  'UniConnect',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Ana Sayfa'),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.calendar_today),
-            title: const Text('Etkinlikler'),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Profilim'),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.campaign),
-            title: const Text('İlanlar'),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.note),
-            title: const Text('Notlar'),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: Icon(
-              widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-            ),
-            title: Text(widget.isDarkMode ? 'Açık Mod' : 'Koyu Mod'),
-            onTap: () {
-              widget.onToggleDarkMode();
-              Navigator.pop(context);
-            },
           ),
         ],
       ),

@@ -278,24 +278,6 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  Widget _buildDialogField({required String label, required Widget child}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF333333),
-          ),
-        ),
-        const SizedBox(height: 6),
-        child,
-      ],
-    );
-  }
-
   Future<void> _saveEvent(DateTime selectedDate) async {
     final title = _titleController.text.trim();
     final place = _placeController.text.trim();

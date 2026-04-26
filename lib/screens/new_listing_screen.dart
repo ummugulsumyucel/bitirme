@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../widgets/common_drawer.dart';
 import '../services/note_upload.dart';
 import '../services/session_service.dart';
 import 'calendar_page.dart';
@@ -50,7 +51,11 @@ class _NewListingScreenState extends State<NewListingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      drawer: _buildDrawer(context),
+      drawer: CommonDrawer(
+        onToggleTheme: widget.onToggleTheme,
+        isDarkMode: widget.isDarkMode,
+        selectedPage: 'announcements',
+      ),
       body: SafeArea(
         child: Column(
           children: [
