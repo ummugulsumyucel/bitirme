@@ -1,13 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../navigation/shell_tab_sync.dart';
 import '../services/session_service.dart';
 import '../widgets/common_app_bar.dart';
 import '../widgets/common_drawer.dart';
-import 'main_shell.dart';
+import 'main_shell.dart' show ShellNavItem;
+import 'new_event_screen.dart' show NewEventScreen;
 
-class EventDetailScreen extends StatelessWidget {
+class EventDetailScreen extends StatefulWidget {
   final String eventId;
   final String title;
   final String date;
@@ -36,6 +38,66 @@ class EventDetailScreen extends StatelessWidget {
   });
 
   @override
+  State<EventDetailScreen> createState() => _EventDetailScreenState();
+}
+
+class _EventDetailScreenState extends State<EventDetailScreen> {
+  String? _currentUid;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUid = FirebaseAuth.instance.currentUser?.uid;
+  }
+
+  /// Etkinliği sil (sadece sahibi yapabilir)
+  Future<void> _deleteEvent() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Etkinliği Sil'),
+        content: const Text(
+          'Bu etkinliği silmek istediğinizden emin misiniz? Tüm katılım kayıtları da silinecek.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sil'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('events')
+          .doc(widget.eventId)
+          .delete();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Etkinlik silindi.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Hata: $e')));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
@@ -43,26 +105,32 @@ class EventDetailScreen extends StatelessWidget {
       backgroundColor: scheme.surface,
       appBar: CommonAppBar(
         title: 'Etkinlik Detayı',
-        onToggleTheme: onToggleTheme,
-        isDarkMode: isDarkMode,
+        onToggleTheme: widget.onToggleTheme,
+        isDarkMode: widget.isDarkMode,
       ),
       drawer: CommonDrawer(
-        onToggleTheme: onToggleTheme,
-        isDarkMode: isDarkMode,
+        onToggleTheme: widget.onToggleTheme,
+        isDarkMode: widget.isDarkMode,
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
             .collection('events')
-            .doc(eventId)
+            .doc(widget.eventId)
             .snapshots(),
         builder: (context, snap) {
           final data = snap.data?.data() ?? {};
           final description = (data['description'] as String?)?.trim();
-          final liveTitle = (data['title'] as String?)?.trim() ?? title;
-          final liveDate = (data['date'] as String?)?.trim() ?? date;
-          final livePlace = (data['place'] as String?)?.trim() ?? place;
-          final liveTime = (data['time'] as String?)?.trim() ?? time;
-          final liveLabel = (data['label'] as String?)?.trim() ?? label ?? '';
+          final liveTitle = (data['title'] as String?)?.trim() ?? widget.title;
+          final liveDate = (data['date'] as String?)?.trim() ?? widget.date;
+          final livePlace = (data['place'] as String?)?.trim() ?? widget.place;
+          final liveTime = (data['time'] as String?)?.trim() ?? widget.time;
+          final liveLabel = (data['label'] as String?)?.trim() ?? widget.label ?? '';
+          final createdBy = (data['createdBy'] as String?)?.trim() ?? '';
+
+          // Mevcut kullanıcı bu etkinliğin sahibi mi?
+          final isOwner = _currentUid != null &&
+              createdBy.isNotEmpty &&
+              _currentUid == createdBy;
 
           return SingleChildScrollView(
             child: Column(
@@ -73,8 +141,7 @@ class EventDetailScreen extends StatelessWidget {
                   height: 200,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    gradient:
-                        background ??
+                    gradient: widget.background ??
                         const LinearGradient(
                           colors: [Color(0xFFE0ECFF), Color(0xFFD0E4FF)],
                         ),
@@ -83,11 +150,9 @@ class EventDetailScreen extends StatelessWidget {
                     children: [
                       Center(
                         child: Icon(
-                          icon ?? Icons.event,
+                          widget.icon ?? Icons.event,
                           size: 80,
-                          color: const Color(
-                            0xFF111827,
-                          ).withValues(alpha: 0.25),
+                          color: const Color(0xFF111827).withValues(alpha: 0.25),
                         ),
                       ),
                       if (liveLabel.isNotEmpty)
@@ -100,9 +165,8 @@ class EventDetailScreen extends StatelessWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: (labelColor ?? Colors.green).withValues(
-                                alpha: 0.15,
-                              ),
+                              color: (widget.labelColor ?? Colors.green)
+                                  .withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
@@ -110,7 +174,7 @@ class EventDetailScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: labelColor ?? Colors.green,
+                                color: widget.labelColor ?? Colors.green,
                               ),
                             ),
                           ),
@@ -136,19 +200,9 @@ class EventDetailScreen extends StatelessWidget {
 
                       _buildInfoCard(context, Icons.event, 'Tarih', liveDate),
                       const SizedBox(height: 10),
-                      _buildInfoCard(
-                        context,
-                        Icons.place_outlined,
-                        'Konum',
-                        livePlace,
-                      ),
+                      _buildInfoCard(context, Icons.place_outlined, 'Konum', livePlace),
                       const SizedBox(height: 10),
-                      _buildInfoCard(
-                        context,
-                        Icons.access_time,
-                        'Saat',
-                        liveTime,
-                      ),
+                      _buildInfoCard(context, Icons.access_time, 'Saat', liveTime),
 
                       const SizedBox(height: 24),
 
@@ -165,7 +219,7 @@ class EventDetailScreen extends StatelessWidget {
                         (description != null && description.isNotEmpty)
                             ? description
                             : 'Bu etkinlik kampüsümüzde düzenlenen özel bir organizasyondur. '
-                                  'Tüm öğrencilerimiz davetlidir.',
+                                'Tüm öğrencilerimiz davetlidir.',
                         style: TextStyle(
                           fontSize: 14,
                           color: scheme.onSurfaceVariant,
@@ -174,13 +228,64 @@ class EventDetailScreen extends StatelessWidget {
                       ),
 
                       const SizedBox(height: 24),
-
                       _buildAttendeesCard(context),
-
                       const SizedBox(height: 24),
 
+                      // ── Sahip: Düzenle + Sil ──────────────────────────────
+                      if (isOwner) ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                icon: const Icon(Icons.edit_outlined),
+                                label: const Text('Düzenle'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: scheme.primary,
+                                  side: BorderSide(color: scheme.primary),
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                onPressed: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => NewEventScreen(
+                                        onToggleTheme: widget.onToggleTheme,
+                                        isDarkMode: widget.isDarkMode,
+                                        editEventId: widget.eventId,
+                                        initialData: data,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.delete_outline),
+                                label: const Text('Sil'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red.shade600,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                onPressed: _deleteEvent,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
+                      // ── Katılım butonu (herkes için) ──────────────────────
                       _JoinButton(
-                        eventId: eventId,
+                        eventId: widget.eventId,
                         title: liveTitle,
                         place: livePlace,
                         time: liveTime,
@@ -258,7 +363,7 @@ class EventDetailScreen extends StatelessWidget {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('event_attendees')
-          .where('eventId', isEqualTo: eventId)
+          .where('eventId', isEqualTo: widget.eventId)
           .snapshots(),
       builder: (context, snap) {
         final count = snap.data?.docs.length ?? 0;
@@ -350,15 +455,12 @@ class EventDetailScreen extends StatelessWidget {
                       selected: false,
                       onTap: () {
                         if (i == 0) {
-                          // Ana Sayfa
                           ShellTabSync.select(0);
                           Navigator.of(context).popUntil((r) => r.isFirst);
                         } else if (i == 1) {
-                          // Takvim
                           ShellTabSync.select(1);
                           Navigator.of(context).popUntil((r) => r.isFirst);
                         } else if (i == 2) {
-                          // Profilim
                           ShellTabSync.select(2);
                           Navigator.of(context).popUntil((r) => r.isFirst);
                         }
@@ -424,14 +526,25 @@ class _JoinButtonState extends State<_JoinButton> {
     }
     setState(() => _loading = true);
     try {
-      final ref = FirebaseFirestore.instance
+      final attendeeRef = FirebaseFirestore.instance
           .collection('event_attendees')
           .doc('${uid}_${widget.eventId}');
+
+      // Kişisel takvim kaydı için sabit bir doc ID kullan
+      final personalRef = FirebaseFirestore.instance
+          .collection('personal_events')
+          .doc('event_join_${uid}_${widget.eventId}');
+
       if (_joined) {
-        await ref.delete();
+        // Katılımı iptal et — attendees + personal_events'ten sil
+        await Future.wait([
+          attendeeRef.delete(),
+          personalRef.delete(),
+        ]);
         if (mounted) setState(() => _joined = false);
       } else {
-        await ref.set({
+        // Katıl — attendees'e kaydet
+        await attendeeRef.set({
           'userDocId': uid,
           'eventId': widget.eventId,
           'title': widget.title,
@@ -439,15 +552,34 @@ class _JoinButtonState extends State<_JoinButton> {
           'dateDisplay': widget.date,
           'joinedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
+
+        // Aynı zamanda kişisel takvime ekle
+        // Kullanıcının e-postasını al (personal_events userId = email)
+        final userEmail = FirebaseAuth.instance.currentUser?.email ?? uid;
+
+        await personalRef.set({
+          'userId': userEmail,
+          'title': widget.title,
+          'place': widget.place,
+          'time': widget.time,
+          'date': widget.date,
+          'description': 'Kampüs etkinliği — katılım kaydedildi.',
+          'eventId': widget.eventId, // kaynak etkinlik referansı
+          'fromCampusEvent': true,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
         if (mounted) setState(() => _joined = true);
       }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               _joined
-                  ? 'Etkinliğe katılım kaydedildi.'
-                  : 'Katılım iptal edildi.',
+                  ? 'Etkinliğe katılım kaydedildi ve takviminize eklendi.'
+                  : 'Katılım iptal edildi ve takvimden kaldırıldı.',
             ),
             backgroundColor: const Color(0xFF5A7FCF),
           ),
@@ -455,9 +587,8 @@ class _JoinButtonState extends State<_JoinButton> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Hata: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Hata: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);

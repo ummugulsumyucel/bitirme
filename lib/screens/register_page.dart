@@ -57,16 +57,16 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 800;
-
     return Scaffold(
       body: isSmallScreen ? _buildMobileLayout() : _buildDesktopLayout(),
     );
   }
 
   Widget _buildMobileLayout() {
+    final scheme = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       child: Container(
-        color: Colors.white,
+        color: scheme.surface, // Tema arka planı
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
@@ -74,18 +74,18 @@ class _RegisterPageState extends State<RegisterPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Hesap Oluştur',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E3A8A),
+                  color: scheme.primary,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Kampüs hayatına katılmak için hesabınızı oluşturun',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
+                style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
               ),
               const SizedBox(height: 8),
               Text(
@@ -94,160 +94,26 @@ class _RegisterPageState extends State<RegisterPage> {
                 style: TextStyle(
                   fontSize: 11,
                   height: 1.35,
-                  color: Colors.grey.shade700,
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 22),
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Ad Soyad',
-                  hintText: 'Adınız ve soyadınızı giriniz',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  prefixIcon: const Icon(Icons.person),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Lütfen adınızı ve soyadınızı girin';
-                  }
-                  return null;
-                },
-              ),
+              _buildNameField(),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: 'E-posta',
-                  hintText: 'ornek@universite.edu.tr',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  prefixIcon: const Icon(Icons.email),
-                ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Lütfen e-posta adresinizi girin';
-                  }
-                  if (!value.contains('@')) {
-                    return 'Geçerli bir e-posta adresi girin';
-                  }
-                  return null;
-                },
-              ),
+              _buildEmailField(),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedDepartment,
-                decoration: InputDecoration(
-                  labelText: 'Bölüm',
-                  hintText: 'Bölümünüzü seçiniz',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  prefixIcon: const Icon(Icons.school),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'Bilgisayar Mühendisliği',
-                    child: Text('Bilgisayar Mühendisliği'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Elektrik Mühendisliği',
-                    child: Text('Elektrik Mühendisliği'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Endüstri Mühendisliği',
-                    child: Text('Endüstri Mühendisliği'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Makine Mühendisliği',
-                    child: Text('Makine Mühendisliği'),
-                  ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDepartment = value;
-                  });
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Lütfen bölüm seçin';
-                  }
-                  return null;
-                },
-              ),
+              _buildDepartmentField(),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedClass,
-                decoration: InputDecoration(
-                  labelText: 'Sınıf',
-                  hintText: 'Sınıfınızı seçiniz',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  prefixIcon: const Icon(Icons.class_),
-                ),
-                items: const [
-                  DropdownMenuItem(value: '1. Sınıf', child: Text('1. Sınıf')),
-                  DropdownMenuItem(value: '2. Sınıf', child: Text('2. Sınıf')),
-                  DropdownMenuItem(value: '3. Sınıf', child: Text('3. Sınıf')),
-                  DropdownMenuItem(value: '4. Sınıf', child: Text('4. Sınıf')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedClass = value;
-                  });
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Lütfen sınıf seçin';
-                  }
-                  return null;
-                },
-              ),
+              _buildClassField(),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Şifre',
-                  hintText: 'En az 8 karakter',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                ),
-                obscureText: _obscurePassword,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Lütfen şifrenizi girin';
-                  }
-                  if (value.length < 8) {
-                    return 'Şifre en az 8 karakter olmalıdır';
-                  }
-                  return null;
-                },
-              ),
+              _buildPasswordField(),
               const SizedBox(height: 30),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _submitting ? null : () => _submitRegister(),
+                  onPressed: _submitting ? null : _submitRegister,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5A7FCF),
+                    backgroundColor: scheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -265,37 +131,12 @@ class _RegisterPageState extends State<RegisterPage> {
                         )
                       : const Text(
                           'Hesap Oluştur',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                 ),
               ),
               const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Zaten hesabınız var mı? '),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginPage(),
-                        ),
-                      );
-                    },
-                    child: const Text(
-                      'Giriş Yap',
-                      style: TextStyle(
-                        color: Color(0xFF1E3A8A),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              _buildLoginLink(),
             ],
           ),
         ),
@@ -304,13 +145,14 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildDesktopLayout() {
+    final scheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         // Sol taraf - Mavi arka plan
         Expanded(
           flex: 2,
           child: Container(
-            decoration: const BoxDecoration(color: Color(0xFF1E3A8A)),
+            decoration: BoxDecoration(color: scheme.primary),
             child: const Center(
               child: Icon(Icons.school, size: 150, color: Colors.white),
             ),
@@ -320,7 +162,7 @@ class _RegisterPageState extends State<RegisterPage> {
         Expanded(
           flex: 3,
           child: Container(
-            color: Colors.white,
+            color: scheme.surface, // Tema arka planı
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(40),
               child: ConstrainedBox(
@@ -331,18 +173,18 @@ class _RegisterPageState extends State<RegisterPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 40),
-                      const Text(
+                      Text(
                         'Hesap Oluştur',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E3A8A),
+                          color: scheme.primary,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Kampüs hayatına katılmak için hesabınızı oluşturun',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                        style: TextStyle(fontSize: 16, color: scheme.onSurfaceVariant),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -350,11 +192,10 @@ class _RegisterPageState extends State<RegisterPage> {
                         style: TextStyle(
                           fontSize: 12,
                           height: 1.35,
-                          color: Colors.grey.shade700,
+                          color: scheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 32),
-                      // İki sütunlu form
                       LayoutBuilder(
                         builder: (context, constraints) {
                           if (constraints.maxWidth < 500) {
@@ -404,11 +245,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _submitting
-                              ? null
-                              : () => _submitRegister(),
+                          onPressed: _submitting ? null : _submitRegister,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1E3A8A),
+                            backgroundColor: scheme.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
@@ -434,29 +273,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('Zaten hesabınız var mı? '),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const LoginPage(),
-                                ),
-                              );
-                            },
-                            child: const Text(
-                              'Giriş Yap',
-                              style: TextStyle(
-                                color: Color(0xFF1E3A8A),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      _buildLoginLink(),
                     ],
                   ),
                 ),
@@ -469,94 +286,77 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildNameField() {
+    final scheme = Theme.of(context).colorScheme;
     return TextFormField(
       controller: _nameController,
+      style: TextStyle(color: scheme.onSurface),
       decoration: InputDecoration(
         labelText: 'Ad Soyad',
         hintText: 'Adınız ve soyadınızı giriniz',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        prefixIcon: const Icon(Icons.person),
+        prefixIcon: Icon(Icons.person, color: scheme.primary),
       ),
       validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Lütfen adınızı ve soyadınızı girin';
-        }
+        if (value == null || value.isEmpty) return 'Lütfen adınızı ve soyadınızı girin';
         return null;
       },
     );
   }
 
   Widget _buildEmailField() {
+    final scheme = Theme.of(context).colorScheme;
     return TextFormField(
       controller: _emailController,
+      style: TextStyle(color: scheme.onSurface),
       decoration: InputDecoration(
         labelText: 'E-posta',
         hintText: 'ornek@universite.edu.tr',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        prefixIcon: const Icon(Icons.email),
+        prefixIcon: Icon(Icons.email, color: scheme.primary),
       ),
       keyboardType: TextInputType.emailAddress,
       validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Lütfen e-posta adresinizi girin';
-        }
-        if (!value.contains('@')) {
-          return 'Geçerli bir e-posta adresi girin';
-        }
+        if (value == null || value.isEmpty) return 'Lütfen e-posta adresinizi girin';
+        if (!value.contains('@')) return 'Geçerli bir e-posta adresi girin';
         return null;
       },
     );
   }
 
   Widget _buildDepartmentField() {
+    final scheme = Theme.of(context).colorScheme;
     return DropdownButtonFormField<String>(
       value: _selectedDepartment,
+      dropdownColor: scheme.surfaceContainerLow,
+      style: TextStyle(color: scheme.onSurface),
       decoration: InputDecoration(
         labelText: 'Bölüm',
         hintText: 'Bölümünüzü seçiniz',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        prefixIcon: const Icon(Icons.school),
+        prefixIcon: Icon(Icons.school, color: scheme.primary),
       ),
       items: const [
-        DropdownMenuItem(
-          value: 'Bilgisayar Mühendisliği',
-          child: Text('Bilgisayar Mühendisliği'),
-        ),
-        DropdownMenuItem(
-          value: 'Elektrik Mühendisliği',
-          child: Text('Elektrik Mühendisliği'),
-        ),
-        DropdownMenuItem(
-          value: 'Endüstri Mühendisliği',
-          child: Text('Endüstri Mühendisliği'),
-        ),
-        DropdownMenuItem(
-          value: 'Makine Mühendisliği',
-          child: Text('Makine Mühendisliği'),
-        ),
+        DropdownMenuItem(value: 'Bilgisayar Mühendisliği', child: Text('Bilgisayar Mühendisliği')),
+        DropdownMenuItem(value: 'Elektrik Mühendisliği', child: Text('Elektrik Mühendisliği')),
+        DropdownMenuItem(value: 'Endüstri Mühendisliği', child: Text('Endüstri Mühendisliği')),
+        DropdownMenuItem(value: 'Makine Mühendisliği', child: Text('Makine Mühendisliği')),
       ],
-      onChanged: (value) {
-        setState(() {
-          _selectedDepartment = value;
-        });
-      },
-      validator: (value) {
-        if (value == null) {
-          return 'Lütfen bölüm seçin';
-        }
-        return null;
-      },
+      onChanged: (value) => setState(() => _selectedDepartment = value),
+      validator: (value) => value == null ? 'Lütfen bölüm seçin' : null,
     );
   }
 
   Widget _buildClassField() {
+    final scheme = Theme.of(context).colorScheme;
     return DropdownButtonFormField<String>(
       value: _selectedClass,
+      dropdownColor: scheme.surfaceContainerLow,
+      style: TextStyle(color: scheme.onSurface),
       decoration: InputDecoration(
         labelText: 'Sınıf',
         hintText: 'Sınıfınızı seçiniz',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        prefixIcon: const Icon(Icons.class_),
+        prefixIcon: Icon(Icons.class_, color: scheme.primary),
       ),
       items: const [
         DropdownMenuItem(value: '1. Sınıf', child: Text('1. Sınıf')),
@@ -564,49 +364,57 @@ class _RegisterPageState extends State<RegisterPage> {
         DropdownMenuItem(value: '3. Sınıf', child: Text('3. Sınıf')),
         DropdownMenuItem(value: '4. Sınıf', child: Text('4. Sınıf')),
       ],
-      onChanged: (value) {
-        setState(() {
-          _selectedClass = value;
-        });
-      },
+      onChanged: (value) => setState(() => _selectedClass = value),
+      validator: (value) => value == null ? 'Lütfen sınıf seçin' : null,
+    );
+  }
+
+  Widget _buildPasswordField() {
+    final scheme = Theme.of(context).colorScheme;
+    return TextFormField(
+      controller: _passwordController,
+      style: TextStyle(color: scheme.onSurface),
+      decoration: InputDecoration(
+        labelText: 'Şifre',
+        hintText: 'En az 8 karakter',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        prefixIcon: Icon(Icons.lock, color: scheme.primary),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _obscurePassword ? Icons.visibility : Icons.visibility_off,
+            color: scheme.onSurfaceVariant,
+          ),
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+        ),
+      ),
+      obscureText: _obscurePassword,
       validator: (value) {
-        if (value == null) {
-          return 'Lütfen sınıf seçin';
-        }
+        if (value == null || value.isEmpty) return 'Lütfen şifrenizi girin';
+        if (value.length < 8) return 'Şifre en az 8 karakter olmalıdır';
         return null;
       },
     );
   }
 
-  Widget _buildPasswordField() {
-    return TextFormField(
-      controller: _passwordController,
-      decoration: InputDecoration(
-        labelText: 'Şifre',
-        hintText: 'En az 8 karakter',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        prefixIcon: const Icon(Icons.lock),
-        suffixIcon: IconButton(
-          icon: Icon(
-            _obscurePassword ? Icons.visibility : Icons.visibility_off,
-          ),
+  Widget _buildLoginLink() {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text('Zaten hesabınız var mı? ', style: TextStyle(color: scheme.onSurfaceVariant)),
+        TextButton(
           onPressed: () {
-            setState(() {
-              _obscurePassword = !_obscurePassword;
-            });
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+            );
           },
+          child: Text(
+            'Giriş Yap',
+            style: TextStyle(color: scheme.primary, fontWeight: FontWeight.bold),
+          ),
         ),
-      ),
-      obscureText: _obscurePassword,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Lütfen şifrenizi girin';
-        }
-        if (value.length < 8) {
-          return 'Şifre en az 8 karakter olmalıdır';
-        }
-        return null;
-      },
+      ],
     );
   }
 

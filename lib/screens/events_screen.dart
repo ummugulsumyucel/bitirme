@@ -78,7 +78,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 (e) => ListTile(
                   title: Text(e),
                   trailing: e == current
-                      ? const Icon(Icons.check, color: Color(0xFF1E3A8A))
+                      ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary) // Tema rengini kullan
                       : null,
                   onTap: () => Navigator.pop(ctx, e),
                 ),
@@ -154,16 +154,16 @@ class _EventsScreenState extends State<EventsScreen> {
 
     if (widget.embeddedInShell) {
       return ColoredBox(
-        color: const Color(0xFFF5F5F5),
+        color: Theme.of(context).colorScheme.surface, // Tema rengini kullan
         child: SizedBox.expand(child: scroll),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).colorScheme.surface, // Tema rengini kullan
       appBar: AppBar(
         title: const Text('Etkinlikler'),
-        backgroundColor: const Color(0xFF1E3A8A),
+        backgroundColor: Theme.of(context).colorScheme.primary, // Tema rengini kullan
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -172,6 +172,7 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Widget _buildSearchFilters() {
+    final scheme = Theme.of(context).colorScheme;
     final categoryLabel = _eventCategory == 'Tümü'
         ? 'Kategori Seç'
         : _eventCategory;
@@ -180,7 +181,7 @@ class _EventsScreenState extends State<EventsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainerLow, // Tema rengini kullan
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -189,7 +190,7 @@ class _EventsScreenState extends State<EventsScreen> {
             children: [
               Expanded(
                 child: Material(
-                  color: const Color(0xFFF3F4F6),
+                  color: scheme.surfaceContainer, // Tema rengini kullan
                   borderRadius: BorderRadius.circular(12),
                   child: InkWell(
                     onTap: () => _showFilterSheet(
@@ -230,7 +231,7 @@ class _EventsScreenState extends State<EventsScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Material(
-                  color: const Color(0xFFF3F4F6),
+                  color: scheme.surfaceContainer, // Tema rengini kullan
                   borderRadius: BorderRadius.circular(12),
                   child: InkWell(
                     onTap: () => _showFilterSheet(
@@ -281,17 +282,17 @@ class _EventsScreenState extends State<EventsScreen> {
                   style: const TextStyle(fontSize: 12),
                   decoration: InputDecoration(
                     hintText: 'Etkinlik Ara...',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF9CA3AF),
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.7), // Tema rengini kullan
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.search,
                       size: 18,
-                      color: Color(0xFF9CA3AF),
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.7), // Tema rengini kullan
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFF3F4F6),
+                    fillColor: scheme.surfaceContainer, // Tema rengini kullan
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -309,7 +310,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 height: 40,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5A7FCF),
+                    backgroundColor: Theme.of(context).colorScheme.primary, // Tema rengini kullan
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -334,7 +335,7 @@ class _EventsScreenState extends State<EventsScreen> {
       width: double.infinity,
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5A7FCF),
+          backgroundColor: Theme.of(context).colorScheme.primary, // Tema rengini kullan
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -393,9 +394,9 @@ class _EventsScreenState extends State<EventsScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text(
+            child: Text(
               'Henuz etkinlik yok. Ilk etkinligi sen ekleyebilirsin.',
-              style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant), // Tema rengini kullan
             ),
           );
         }
@@ -412,9 +413,9 @@ class _EventsScreenState extends State<EventsScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text(
+            child: Text(
               'Bu filtrelere uygun etkinlik yok. Filtreleri veya aramayı değiştir.',
-              style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant), // Tema rengini kullan
             ),
           );
         }
@@ -543,12 +544,18 @@ class _EventsScreenState extends State<EventsScreen> {
     required LinearGradient background,
     required IconData icon,
   }) {
+    final scheme = Theme.of(context).colorScheme;
+    
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainerLow, // Tema rengini kullan
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.shadow.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -597,22 +604,22 @@ class _EventsScreenState extends State<EventsScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
+                    color: scheme.onSurface, // Tema rengini kullan
                   ),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.event, size: 14, color: Color(0xFF6B7280)),
+                    Icon(Icons.event, size: 14, color: scheme.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Text(
                       date,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF6B7280),
+                        color: scheme.onSurfaceVariant, // Tema rengini kullan
                       ),
                     ),
                   ],
@@ -620,17 +627,17 @@ class _EventsScreenState extends State<EventsScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.place_outlined,
                       size: 14,
-                      color: Color(0xFF6B7280),
+                      color: scheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       place,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF6B7280),
+                        color: scheme.onSurfaceVariant, // Tema rengini kullan
                       ),
                     ),
                   ],
@@ -638,17 +645,17 @@ class _EventsScreenState extends State<EventsScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.access_time,
                       size: 14,
-                      color: Color(0xFF6B7280),
+                      color: scheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       time,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF6B7280),
+                        color: scheme.onSurfaceVariant, // Tema rengini kullan
                       ),
                     ),
                   ],
@@ -658,7 +665,7 @@ class _EventsScreenState extends State<EventsScreen> {
                   width: double.infinity,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF1E3A8A)),
+                      side: BorderSide(color: scheme.primary), // Tema rengini kullan
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
                       ),
@@ -684,12 +691,12 @@ class _EventsScreenState extends State<EventsScreen> {
                         ),
                       );
                     },
-                    child: const Text(
+                    child: Text(
                       'Detayları Gör',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1E3A8A),
+                        color: scheme.primary, // Tema rengini kullan
                       ),
                     ),
                   ),

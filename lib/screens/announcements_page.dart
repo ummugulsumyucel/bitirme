@@ -405,7 +405,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   _filterAnnouncements();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5A7FCF),
+                  backgroundColor: scheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -428,7 +428,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   style: TextStyle(color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5A7FCF),
+                  backgroundColor: scheme.primary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -449,7 +449,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   style: TextStyle(color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5A7FCF),
+                  backgroundColor: scheme.primary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -460,6 +460,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   }
 
   Widget _buildAnnouncementCard(Announcement announcement) {
+    final scheme = Theme.of(context).colorScheme;
     final dateFormat = DateFormat('d MMMM yyyy', 'tr_TR');
 
     return Card(
@@ -475,8 +476,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                 Icon(announcement.icon, color: announcement.iconColor),
                 const SizedBox(width: 8),
                 Text(
-                  announcement
-                      .author, // type bilgisi (Kayıp Eşya / Bulunan Eşya)
+                  announcement.author,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -489,30 +489,43 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
             const SizedBox(height: 12),
             Text(
               announcement.title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: scheme.onSurface, // Tema rengini kullan
+              ),
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.category, size: 16, color: Colors.grey),
+                Icon(Icons.category, size: 16, color: scheme.onSurfaceVariant),
                 const SizedBox(width: 8),
-                Text(announcement.category),
+                Text(
+                  announcement.category,
+                  style: TextStyle(color: scheme.onSurface),
+                ),
               ],
             ),
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                Icon(Icons.location_on, size: 16, color: scheme.onSurfaceVariant),
                 const SizedBox(width: 8),
-                Text(announcement.location),
+                Text(
+                  announcement.location,
+                  style: TextStyle(color: scheme.onSurface),
+                ),
               ],
             ),
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                Icon(Icons.calendar_today, size: 16, color: scheme.onSurfaceVariant),
                 const SizedBox(width: 8),
-                Text(dateFormat.format(announcement.date)),
+                Text(
+                  dateFormat.format(announcement.date),
+                  style: TextStyle(color: scheme.onSurface),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -523,8 +536,8 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   _showDetails(announcement);
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFF5A7FCF)),
-                  foregroundColor: const Color(0xFF5A7FCF),
+                  side: BorderSide(color: scheme.primary), // Tema rengini kullan
+                  foregroundColor: scheme.primary, // Tema rengini kullan
                 ),
                 child: const Text('Detayları Gör'),
               ),

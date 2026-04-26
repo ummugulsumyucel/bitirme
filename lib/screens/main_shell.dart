@@ -393,7 +393,9 @@ class _MainShellState extends State<MainShell> {
 
     return Material(
       elevation: 0,
-      color: scheme.surfaceContainer,
+      color: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF263050) // Koyu temada yumuşak mavi-gri
+          : scheme.surfaceContainer,
       child: DecoratedBox(
         decoration: BoxDecoration(
           border: Border(

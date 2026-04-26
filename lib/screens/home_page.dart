@@ -1,4 +1,5 @@
 // GIT_TEST_999
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,6 +11,7 @@ import 'events_screen.dart';
 import 'profile_screen.dart';
 import 'announcements_page.dart';
 import 'notes_feed_screen.dart';
+import 'event_detail_screen.dart';
 import '../services/auth_service.dart';
 import '../services/klu_clubs_service.dart';
 import '../services/club_logo_service.dart';
@@ -38,6 +40,7 @@ class HomePage extends StatelessWidget {
           child: Column(
             children: [
               _buildHeroSection(context),
+              _buildAnnouncementBanner(context),   // ← Yeni slider
               _buildUpcomingEventSection(context),
               _buildThisWeekSection(context),
               _buildSupportingClubsSection(context),
@@ -100,6 +103,10 @@ class HomePage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildAnnouncementBanner(BuildContext context) {
+    return _AnnouncementBannerSlider();
   }
 
   Widget _buildHeroSection(BuildContext context) {
@@ -175,24 +182,24 @@ class HomePage extends StatelessWidget {
               letterSpacing: -0.8,
             ),
           ),
-          const SizedBox(height: 18),
-          Text(
-            'Ders programınız, etkinlikler, duyurular ve ilanlar… Hepsi cebinizde; ihtiyacınız her an, her yerde.',
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.45,
-              color: scheme.onSurface.withValues(alpha: 0.82),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Kampüs hayatını kaçırma: dersleri takip et, etkinliklerden haberdar ol, yeni arkadaşlıklar kur.',
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.45,
-              color: scheme.onSurface.withValues(alpha: 0.75),
-            ),
-          ),
+          //const SizedBox(height: 18),
+          //Text(
+            //'Ders programınız, etkinlikler, duyurular ve ilanlar… Hepsi cebinizde; ihtiyacınız her an, her yerde.',
+            //style: TextStyle(
+              //fontSize: 14,
+              //height: 1.45,
+              //color: scheme.onSurface.withValues(alpha: 0.82),
+            //),
+          //),
+          //const SizedBox(height: 10),
+          //Text(
+            //'Kampüs hayatını kaçırma: dersleri takip et, etkinliklerden haberdar ol, yeni arkadaşlıklar kur.',
+            //style: TextStyle(
+              //fontSize: 14,
+              //height: 1.45,
+              //color: scheme.onSurface.withValues(alpha: 0.75),
+            //),
+          //),
         ],
       ),
     );
@@ -312,7 +319,10 @@ class HomePage extends StatelessWidget {
                 children: [
                   for (int i = 0; i < events.length; i++) ...[
                     if (i > 0) const SizedBox(height: 12),
-                    _buildEventCard(context, events[i].data()),
+                    _buildEventCard(context, {
+                      ...events[i].data(),
+                      'id': events[i].id, // Document ID'sini ekle
+                    }),
                   ],
                   const SizedBox(
                     height: 32,
@@ -334,131 +344,150 @@ class HomePage extends StatelessWidget {
     final time = (eventData['time'] as String?)?.trim() ?? '';
     final category = (eventData['category'] as String?)?.trim() ?? '';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            scheme.primary,
-            Color.lerp(scheme.primary, const Color(0xFF0F1729), 0.25)!,
-          ],
-        ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // Etkinlik detay sayfasına yönlendir
+          _navigateToEventDetail(context, eventData);
+        },
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.primary.withValues(alpha: 0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Sol taraf - Icon
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: scheme.onPrimary.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              _getEventIcon(category),
-              color: scheme.onPrimary,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Sağ taraf - İçerik
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Başlık
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: scheme.onPrimary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                // Kategori
-                if (category.isNotEmpty)
-                  Text(
-                    category,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: scheme.onPrimary.withValues(alpha: 0.75),
-                    ),
-                  ),
-                const SizedBox(height: 10),
-                // Yer
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on_rounded,
-                      size: 16,
-                      color: scheme.onPrimary.withValues(alpha: 0.85),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        place.isNotEmpty ? place : 'Yer belirtilmemiş',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: scheme.onPrimary.withValues(alpha: 0.9),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                // Tarih ve Saat
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today_rounded,
-                      size: 16,
-                      color: scheme.onPrimary.withValues(alpha: 0.85),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      date.isNotEmpty ? date : 'Tarih belirtilmemiş',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: scheme.onPrimary.withValues(alpha: 0.9),
-                      ),
-                    ),
-                    if (time.isNotEmpty) ...[
-                      const SizedBox(width: 16),
-                      Icon(
-                        Icons.access_time_rounded,
-                        size: 16,
-                        color: scheme.onPrimary.withValues(alpha: 0.85),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        time,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: scheme.onPrimary.withValues(alpha: 0.9),
-                        ),
-                      ),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? [
+                      const Color(0xFF3D5296), // Koyu temada orta mavi
+                      const Color(0xFF2E3F7A), // Biraz daha koyu ama siyah değil
+                    ]
+                  : [
+                      scheme.primary,
+                      Color.lerp(scheme.primary, const Color(0xFF0F1729), 0.25)!,
                     ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? const Color(0xFF3D5296).withValues(alpha: 0.35)
+                    : scheme.primary.withValues(alpha: 0.25),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Sol taraf - Icon
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: isDark ? 0.15 : 0.18),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  _getEventIcon(category),
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Sağ taraf - İçerik
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Başlık
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    // Kategori
+                    if (category.isNotEmpty)
+                      Text(
+                        category,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                    // Yer
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_rounded,
+                          size: 16,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            place.isNotEmpty ? place : 'Yer belirtilmemiş',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // Tarih ve Saat
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today_rounded,
+                          size: 16,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          date.isNotEmpty ? date : 'Tarih belirtilmemiş',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
+                        if (time.isNotEmpty) ...[
+                          const SizedBox(width: 16),
+                          Icon(
+                            Icons.access_time_rounded,
+                            size: 16,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            time,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -482,6 +511,42 @@ class HomePage extends StatelessWidget {
       default:
         return Icons.event_rounded;
     }
+  }
+
+  void _navigateToEventDetail(BuildContext context, Map<String, dynamic> eventData) {
+    // Firestore document ID'sini al (eğer varsa)
+    String? eventId;
+    
+    // Eğer eventData bir DocumentSnapshot'tan geliyorsa, ID'yi al
+    if (eventData.containsKey('id')) {
+      eventId = eventData['id'] as String?;
+    }
+    
+    // Eğer ID yoksa, title'dan basit bir ID oluştur
+    eventId ??= eventData['title']?.toString().toLowerCase().replaceAll(' ', '_') ?? 'unknown_event';
+    
+    final title = (eventData['title'] as String?)?.trim() ?? 'Etkinlik';
+    final place = (eventData['place'] as String?)?.trim() ?? 'Yer belirtilmemiş';
+    final date = (eventData['date'] as String?)?.trim() ?? 'Tarih belirtilmemiş';
+    final time = (eventData['time'] as String?)?.trim() ?? 'Saat belirtilmemiş';
+    final category = (eventData['category'] as String?)?.trim() ?? '';
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EventDetailScreen(
+          eventId: eventId!,
+          title: title,
+          date: date,
+          place: place,
+          time: time,
+          label: category.isNotEmpty ? category : null,
+          icon: _getEventIcon(category),
+          onToggleTheme: onToggleDarkMode,
+          isDarkMode: isDarkMode,
+        ),
+      ),
+    );
   }
 
   Widget _buildThisWeekSection(BuildContext context) {
@@ -1162,4 +1227,203 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
+}
+
+
+// ── Duyuru Banner Slider ────────────────────────────────────────────────────
+
+class _AnnouncementBannerSlider extends StatefulWidget {
+  @override
+  State<_AnnouncementBannerSlider> createState() =>
+      _AnnouncementBannerSliderState();
+}
+
+class _AnnouncementBannerSliderState extends State<_AnnouncementBannerSlider> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  Timer? _timer;
+
+  // Varsayılan banner verileri (Firestore'dan veri gelmezse kullanılır)
+  static const List<_BannerItem> _defaultBanners = [
+    _BannerItem(
+      title: 'Kampüs Etkinliklerine Katıl!',
+      subtitle: 'Seminer, konser ve atölye çalışmalarını kaçırma.',
+      icon: Icons.event_rounded,
+      gradientStart: Color(0xFF1E3A8A),
+      gradientEnd: Color(0xFF3B82F6),
+    ),
+    _BannerItem(
+      title: 'Yeni Duyurular',
+      subtitle: 'Akademik takvim ve önemli tarihler için takipte kal.',
+      icon: Icons.campaign_rounded,
+      gradientStart: Color(0xFF6366F1),
+      gradientEnd: Color(0xFF8B5CF6),
+    ),
+    _BannerItem(
+      title: 'Kulüplere Katıl',
+      subtitle: 'Kampüs kulüpleriyle sosyal hayatını zenginleştir.',
+      icon: Icons.groups_rounded,
+      gradientStart: Color(0xFF0EA5E9),
+      gradientEnd: Color(0xFF06B6D4),
+    ),
+    _BannerItem(
+      title: 'Kayıp & Bulunan',
+      subtitle: 'Eşyalarını bul veya bulduklarını paylaş.',
+      icon: Icons.search_rounded,
+      gradientStart: Color(0xFF10B981),
+      gradientEnd: Color(0xFF059669),
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _startAutoScroll();
+  }
+
+  void _startAutoScroll() {
+    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      final nextPage = (_currentPage + 1) % _defaultBanners.length;
+      _pageController.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 160,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: _defaultBanners.length,
+            onPageChanged: (i) => setState(() => _currentPage = i),
+            itemBuilder: (context, index) {
+              final banner = _defaultBanners[index];
+              return _buildBannerCard(banner);
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Nokta göstergesi
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            _defaultBanners.length,
+            (i) => AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: _currentPage == i ? 20 : 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: _currentPage == i
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Widget _buildBannerCard(_BannerItem banner) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [banner.gradientStart, banner.gradientEnd],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: banner.gradientStart.withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            // İkon
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(banner.icon, color: Colors.white, size: 34),
+            ),
+            const SizedBox(width: 16),
+            // Metin
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    banner.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    banner.subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.85),
+                      height: 1.4,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BannerItem {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color gradientStart;
+  final Color gradientEnd;
+
+  const _BannerItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.gradientStart,
+    required this.gradientEnd,
+  });
 }
