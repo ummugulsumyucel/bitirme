@@ -30,6 +30,7 @@ class KluFoodService {
       return _cachedHtml;
     } catch (e) {
       debugPrint('[KluFood] hata: $e');
+      // Hata durumunda sessizce null dön, uygulama çalışmaya devam etsin
       return null;
     }
   }

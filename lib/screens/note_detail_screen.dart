@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../services/web_file_opener.dart';
 import '../services/session_service.dart';
 
-class NoteDetailScreen extends StatelessWidget {
+class NoteDetailScreen extends StatefulWidget {
   final String? noteId;
   final String title;
   final String author;
@@ -35,6 +35,133 @@ class NoteDetailScreen extends StatelessWidget {
   });
 
   @override
+  State<NoteDetailScreen> createState() => _NoteDetailScreenState();
+}
+
+class _NoteDetailScreenState extends State<NoteDetailScreen> {
+  int _userRating = 0;
+  bool _ratingSubmitted = false;
+
+  bool get _hasFile =>
+      widget.fileUrl != null && widget.fileUrl!.trim().isNotEmpty;
+
+  Future<void> _openFile(BuildContext context) async {
+    final url = widget.fileUrl?.trim();
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bu not için dosya bağlantısı yok.')),
+      );
+      return;
+    }
+    try {
+      openFileInBrowser(url, fileName: widget.fileName);
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Dosya açılamadı: $e')));
+    }
+  }
+
+  Future<void> _downloadFile(BuildContext context) async {
+    final url = widget.fileUrl?.trim();
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bu not için dosya bağlantısı yok.')),
+      );
+      return;
+    }
+    try {
+      downloadFileInBrowser(url, fileName: widget.fileName);
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('İndirme başlatılamadı: $e')));
+    }
+  }
+
+  Future<void> _submitRating(int stars) async {
+    final nid = widget.noteId?.trim();
+    if (nid == null || nid.isEmpty) return;
+
+    final uid = await SessionService.ensureUserDocId();
+    if (!mounted) return;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Puan vermek için giriş yapmalısınız.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _userRating = stars;
+      _ratingSubmitted = true;
+    });
+
+    try {
+      // Kullanıcının önceki puanını kontrol et
+      final ratingRef = FirebaseFirestore.instance
+          .collection('note_ratings')
+          .doc('${uid}_$nid');
+      final existing = await ratingRef.get();
+
+      await ratingRef.set({
+        'userDocId': uid,
+        'noteId': nid,
+        'rating': stars,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // Notun ortalama puanını güncelle (transaction ile)
+      await FirebaseFirestore.instance.runTransaction((tx) async {
+        final noteRef = FirebaseFirestore.instance.collection('notes').doc(nid);
+        final noteSnap = await tx.get(noteRef);
+        if (!noteSnap.exists) return;
+
+        final data = noteSnap.data()!;
+        final oldAvg = (data['ratingAvg'] as num?)?.toDouble() ?? 0.0;
+        final oldCount = (data['ratingCount'] as num?)?.toInt() ?? 0;
+
+        double newAvg;
+        int newCount;
+
+        if (existing.exists) {
+          // Önceki puanı güncelle
+          final oldRating =
+              (existing.data()?['rating'] as num?)?.toDouble() ?? 0.0;
+          final totalScore = oldAvg * oldCount - oldRating + stars;
+          newCount = oldCount;
+          newAvg = newCount > 0 ? totalScore / newCount : stars.toDouble();
+        } else {
+          // Yeni puan ekle
+          newCount = oldCount + 1;
+          newAvg = (oldAvg * oldCount + stars) / newCount;
+        }
+
+        tx.update(noteRef, {
+          'ratingAvg': double.parse(newAvg.toStringAsFixed(1)),
+          'ratingCount': newCount,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$stars yıldız verdiniz! Teşekkürler 🌟'),
+          backgroundColor: const Color(0xFF5A7FCF),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Puan verilemedi: $e')));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
@@ -55,7 +182,7 @@ class NoteDetailScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: tagColor.withValues(alpha: 0.1),
+                color: widget.tagColor.withValues(alpha: 0.1),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(24),
                   bottomRight: Radius.circular(24),
@@ -70,21 +197,21 @@ class NoteDetailScreen extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: tagColor.withValues(alpha: 0.2),
+                      color: widget.tagColor.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      colorLabel,
+                      widget.colorLabel,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: tagColor,
+                        color: widget.tagColor,
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    title,
+                    widget.title,
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -101,7 +228,7 @@ class NoteDetailScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        rating.toStringAsFixed(1),
+                        widget.rating.toStringAsFixed(1),
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -123,31 +250,33 @@ class NoteDetailScreen extends StatelessWidget {
                     context,
                     Icons.person_outline,
                     'Yazar',
-                    author,
+                    widget.author,
                   ),
                   const SizedBox(height: 10),
                   _buildInfoCard(
                     context,
                     Icons.menu_book_outlined,
                     'Ders',
-                    course,
+                    widget.course,
                   ),
-                  if (department != null && department!.isNotEmpty) ...[
+                  if (widget.department != null &&
+                      widget.department!.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     _buildInfoCard(
                       context,
                       Icons.school_outlined,
                       'Bölüm',
-                      department!,
+                      widget.department!,
                     ),
                   ],
-                  if (semester != null && semester!.isNotEmpty) ...[
+                  if (widget.semester != null &&
+                      widget.semester!.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     _buildInfoCard(
                       context,
                       Icons.calendar_today_outlined,
                       'Sınıf / Dönem',
-                      semester!,
+                      widget.semester!,
                     ),
                   ],
 
@@ -173,9 +302,9 @@ class NoteDetailScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          (description != null &&
-                                  description!.trim().isNotEmpty)
-                              ? description!.trim()
+                          (widget.description != null &&
+                                  widget.description!.trim().isNotEmpty)
+                              ? widget.description!.trim()
                               : 'Bu not için henüz metin özeti yok. Eklenen PDF veya görseli aşağıdan açabilirsin.',
                           style: TextStyle(
                             fontSize: 14,
@@ -183,8 +312,8 @@ class NoteDetailScreen extends StatelessWidget {
                             height: 1.6,
                           ),
                         ),
-                        if (fileName != null &&
-                            fileName!.trim().isNotEmpty) ...[
+                        if (widget.fileName != null &&
+                            widget.fileName!.trim().isNotEmpty) ...[
                           const SizedBox(height: 16),
                           Row(
                             children: [
@@ -196,7 +325,7 @@ class NoteDetailScreen extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  fileName!.trim(),
+                                  widget.fileName!.trim(),
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -211,130 +340,205 @@ class NoteDetailScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: scheme.primary),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                  // Dosya butonları
+                  if (_hasFile) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E3A8A),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          icon: Icon(
-                            Icons.download_outlined,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        icon: const Icon(Icons.visibility_outlined),
+                        label: const Text(
+                          'Dosyayı Görüntüle',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: () => _openFile(context),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: scheme.primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        icon: Icon(
+                          Icons.download_outlined,
+                          color: scheme.primary,
+                        ),
+                        label: Text(
+                          'İndir',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                             color: scheme.primary,
                           ),
-                          label: Text(
-                            'İndir',
+                        ),
+                        onPressed: () => _downloadFile(context),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ] else ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: scheme.outlineVariant),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: scheme.onSurfaceVariant,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Bu nota dosya eklenmemiş.',
                             style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: scheme.primary,
+                              fontSize: 13,
+                              color: scheme.onSurfaceVariant,
                             ),
                           ),
-                          onPressed: () async {
-                            final url = fileUrl?.trim();
-                            if (url == null || url.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Bu not için dosya bağlantısı yok.',
-                                  ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+
+                  // Puan ver
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _ratingSubmitted
+                              ? 'Puanınız kaydedildi!'
+                              : 'Bu notu puanla',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: scheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: List.generate(5, (i) {
+                            final star = i + 1;
+                            return GestureDetector(
+                              onTap: () => _submitRating(star),
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: Icon(
+                                  star <= _userRating
+                                      ? Icons.star_rounded
+                                      : Icons.star_outline_rounded,
+                                  color: star <= _userRating
+                                      ? const Color(0xFFFACC15)
+                                      : scheme.outlineVariant,
+                                  size: 32,
                                 ),
-                              );
-                              return;
-                            }
-                            final uri = Uri.parse(url);
-                            final ok = await launchUrl(
-                              uri,
-                              mode: LaunchMode.externalApplication,
+                              ),
                             );
-                            if (!context.mounted) return;
-                            if (!ok) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Bağlantı açılamadı.'),
-                                ),
-                              );
-                            }
-                          },
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Kaydet butonu
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF5A7FCF),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      icon: const Icon(Icons.bookmark_outline),
+                      label: const Text(
+                        'Kaydet',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5A7FCF),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      onPressed: () async {
+                        final nid = widget.noteId?.trim();
+                        if (nid == null || nid.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Bu not için kayıt kimliği yok.'),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          icon: const Icon(Icons.bookmark_outline),
-                          label: const Text(
-                            'Kaydet',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          );
+                          return;
+                        }
+                        final uid = await SessionService.ensureUserDocId();
+                        if (!context.mounted) return;
+                        if (uid == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Kaydetmek için giriş yapmalısınız.',
+                              ),
                             ),
-                          ),
-                          onPressed: () async {
-                            final nid = noteId?.trim();
-                            if (nid == null || nid.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Bu not için kayıt kimliği yok.',
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-                            final uid = await SessionService.ensureUserDocId();
-                            if (!context.mounted) return;
-                            if (uid == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Kaydetmek için giriş yapmalısınız.',
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-                            try {
-                              await FirebaseFirestore.instance
-                                  .collection('saved_notes')
-                                  .doc('${uid}_$nid')
-                                  .set({
-                                    'userDocId': uid,
-                                    'noteId': nid,
-                                    'noteTitle': title,
-                                    'course': course,
-                                    'savedAt': FieldValue.serverTimestamp(),
-                                  }, SetOptions(merge: true));
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Not profiline kaydedildi.'),
-                                  backgroundColor: Color(0xFF5A7FCF),
-                                ),
-                              );
-                            } catch (e) {
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Hata: $e')),
-                              );
-                            }
-                          },
-                        ),
-                      ),
-                    ],
+                          );
+                          return;
+                        }
+                        try {
+                          await FirebaseFirestore.instance
+                              .collection('saved_notes')
+                              .doc('${uid}_$nid')
+                              .set({
+                                'userDocId': uid,
+                                'noteId': nid,
+                                'noteTitle': widget.title,
+                                'course': widget.course,
+                                'savedAt': FieldValue.serverTimestamp(),
+                              }, SetOptions(merge: true));
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Not profiline kaydedildi.'),
+                              backgroundColor: Color(0xFF5A7FCF),
+                            ),
+                          );
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('Hata: $e')));
+                        }
+                      },
+                    ),
                   ),
                   const SizedBox(height: 24),
                 ],

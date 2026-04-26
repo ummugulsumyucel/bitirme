@@ -5,6 +5,8 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onToggleTheme;
   final bool isDarkMode;
   final List<Widget>? actions;
+  final bool automaticallyImplyLeading;
+  final bool showDrawerButton;
 
   const CommonAppBar({
     super.key,
@@ -12,14 +14,30 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onToggleTheme,
     this.isDarkMode = false,
     this.actions,
+    this.automaticallyImplyLeading = true,
+    this.showDrawerButton = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final scaffold = Scaffold.maybeOf(context);
+    final hasDrawer = scaffold?.hasDrawer ?? false;
+
     return AppBar(
       title: Text(title),
-      backgroundColor: const Color(0xFF1E3A8A),
-      foregroundColor: Colors.white,
+      backgroundColor: scheme.primary,
+      foregroundColor: scheme.onPrimary,
+      automaticallyImplyLeading: automaticallyImplyLeading,
+      leading: hasDrawer
+          ? Builder(
+              builder: (ctx) => IconButton(
+                icon: const Icon(Icons.menu_rounded),
+                tooltip: 'Menü',
+                onPressed: () => Scaffold.of(ctx).openDrawer(),
+              ),
+            )
+          : null,
       actions: [
         if (actions != null) ...actions!,
         if (onToggleTheme != null)

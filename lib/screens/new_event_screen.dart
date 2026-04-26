@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 
 import '../services/auth_service.dart';
+import '../widgets/common_drawer.dart';
 import '../services/note_upload.dart';
 import 'calendar_page.dart';
 import 'login_page.dart';
@@ -584,6 +585,21 @@ class _NewEventScreenState extends State<NewEventScreen> {
   }
 
   Future<void> _submitEvent() async {
+    // Yetki kontrolü
+    final auth = AuthService();
+    if (!auth.isLoggedIn || !auth.canAddEvent) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Etkinlik eklemek için yetkiniz yok. Sadece admin ve kulüp başkanları etkinlik ekleyebilir.',
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     final title = _titleController.text.trim();
     final place = _placeController.text.trim();
     final description = _descriptionController.text.trim();

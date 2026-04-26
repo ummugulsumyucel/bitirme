@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../navigation/shell_tab_sync.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../theme/uni_theme.dart';
+import '../widgets/notification_widget.dart';
 import 'announcements_page.dart';
 import 'calendar_page.dart';
 import 'events_screen.dart';
@@ -13,6 +16,7 @@ import 'notes_feed_screen.dart';
 import 'profile_screen.dart';
 import 'register_page.dart';
 import 'suggestion_complaint_screen.dart';
+import 'chatbot_screen.dart';
 
 /// Tek scaffold: AppBar + Drawer + alt gezinme; sekmeler IndexedStack ile durumu korur.
 class MainShell extends StatefulWidget {
@@ -32,6 +36,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _index = 0;
+  final NotificationService _notificationService = NotificationService();
 
   late final void Function(int) _shellTabHandler;
 
@@ -42,6 +47,26 @@ class _MainShellState extends State<MainShell> {
       if (mounted) setState(() => _index = i);
     };
     ShellTabSync.register(_shellTabHandler);
+
+    // Initialize notification service
+    _initializeNotifications();
+  }
+
+  Future<void> _initializeNotifications() async {
+    await _notificationService.initialize();
+    // Check for new notifications periodically
+    _startNotificationTimer();
+  }
+
+  void _startNotificationTimer() {
+    // Check for new notifications every 30 seconds
+    Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        _notificationService.checkForNewNotifications();
+      } else {
+        timer.cancel();
+      }
+    });
   }
 
   @override
@@ -99,6 +124,28 @@ class _MainShellState extends State<MainShell> {
           onPressed: _openDrawer,
         ),
         actions: [
+          NotificationBadge(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const NotificationPanel(),
+              );
+            },
+            child: IconButton(
+              tooltip: 'Bildirimler',
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const NotificationPanel(),
+                );
+              },
+            ),
+          ),
           IconButton(
             tooltip: _isDark ? 'Açık tema' : 'Koyu tema',
             icon: Icon(
@@ -109,6 +156,8 @@ class _MainShellState extends State<MainShell> {
         ],
       ),
       drawer: _buildDrawer(context),
+      floatingActionButton: _buildChatFab(context),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: IndexedStack(
         index: _index,
         children: [
@@ -144,6 +193,45 @@ class _MainShellState extends State<MainShell> {
         ],
       ),
       bottomNavigationBar: _buildBottomNav(context),
+    );
+  }
+
+  Widget _buildChatFab(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [scheme.primary, scheme.secondary],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: 0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const ChatbotScreen(),
+            );
+          },
+          child: Icon(Icons.auto_awesome, color: scheme.onPrimary, size: 28),
+        ),
+      ),
     );
   }
 
@@ -187,15 +275,16 @@ class _MainShellState extends State<MainShell> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
-                        color: scheme.onPrimary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(16),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(32),
                       ),
-                      child: Icon(
-                        Icons.school_rounded,
-                        color: scheme.onPrimary,
-                        size: 36,
+                      padding: const EdgeInsets.all(6),
+                      child: Image.asset(
+                        'assets/images/logo1.png',
+                        fit: BoxFit.contain,
                       ),
                     ),
                     const SizedBox(height: 16),

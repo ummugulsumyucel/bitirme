@@ -15,9 +15,10 @@ class _RegisterPageState extends State<RegisterPage> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _departmentController = TextEditingController();
   bool _obscurePassword = true;
-  String? _selectedDepartment;
   String? _selectedClass;
+  String _selectedRole = 'student';
   bool _submitting = false;
 
   Future<void> _submitRegister() async {
@@ -27,8 +28,9 @@ class _RegisterPageState extends State<RegisterPage> {
       _nameController.text.trim(),
       _emailController.text.trim(),
       _passwordController.text,
-      department: _selectedDepartment!,
+      department: _departmentController.text.trim(),
       grade: _selectedClass!,
+      role: _selectedRole,
     );
     if (!mounted) return;
     setState(() => _submitting = false);
@@ -188,7 +190,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Kayıt Firebase Authentication + Firestore ile yapılır.',
+                        'Kampüs hayatına katılmak için hesabınızı oluşturun',
                         style: TextStyle(
                           fontSize: 12,
                           height: 1.35,
@@ -224,6 +226,8 @@ class _RegisterPageState extends State<RegisterPage> {
                                     _buildDepartmentField(),
                                     const SizedBox(height: 20),
                                     _buildPasswordField(),
+                                    const SizedBox(height: 20),
+                                    _buildRoleSelector(),
                                   ],
                                 ),
                               ),
@@ -331,7 +335,7 @@ class _RegisterPageState extends State<RegisterPage> {
       style: TextStyle(color: scheme.onSurface),
       decoration: InputDecoration(
         labelText: 'Bölüm',
-        hintText: 'Bölümünüzü seçiniz',
+        hintText: 'Örn: Bilgisayar Mühendisliği',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         prefixIcon: Icon(Icons.school, color: scheme.primary),
       ),
@@ -359,6 +363,7 @@ class _RegisterPageState extends State<RegisterPage> {
         prefixIcon: Icon(Icons.class_, color: scheme.primary),
       ),
       items: const [
+        DropdownMenuItem(value: 'Hazırlık', child: Text('Hazırlık')),
         DropdownMenuItem(value: '1. Sınıf', child: Text('1. Sınıf')),
         DropdownMenuItem(value: '2. Sınıf', child: Text('2. Sınıf')),
         DropdownMenuItem(value: '3. Sınıf', child: Text('3. Sınıf')),
@@ -366,6 +371,107 @@ class _RegisterPageState extends State<RegisterPage> {
       ],
       onChanged: (value) => setState(() => _selectedClass = value),
       validator: (value) => value == null ? 'Lütfen sınıf seçin' : null,
+    );
+  }
+
+  Widget _buildRoleSelector() {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Hesap Türü',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildRoleCard(
+                value: 'student',
+                label: 'Öğrenci',
+                icon: Icons.school_outlined,
+                description: 'Not paylaş, etkinliklere katıl',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildRoleCard(
+                value: 'club_leader',
+                label: 'Kulüp Başkanı',
+                icon: Icons.groups_outlined,
+                description: 'Etkinlik oluştur ve yönet',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoleCard({
+    required String value,
+    required String label,
+    required IconData icon,
+    required String description,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final isSelected = _selectedRole == value;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedRole = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? scheme.primary.withValues(alpha: 0.08)
+              : scheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? scheme.primary : scheme.outlineVariant,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: isSelected ? scheme.primary : scheme.onSurfaceVariant,
+                ),
+                const Spacer(),
+                if (isSelected)
+                  Icon(Icons.check_circle, size: 18, color: scheme.primary),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: isSelected ? scheme.primary : scheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: TextStyle(
+                fontSize: 11,
+                color: scheme.onSurfaceVariant,
+                height: 1.3,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -423,6 +529,7 @@ class _RegisterPageState extends State<RegisterPage> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _departmentController.dispose();
     super.dispose();
   }
 }

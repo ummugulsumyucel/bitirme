@@ -8,6 +8,7 @@ abstract final class UniBrand {
 }
 
 ThemeData uniTheme(Brightness brightness) {
+  final isDark = brightness == Brightness.dark;
   final base = ColorScheme.fromSeed(
     seedColor: UniBrand.primary,
     brightness: brightness,
@@ -50,6 +51,10 @@ ThemeData uniTheme(Brightness brightness) {
     colorScheme: scheme,
     fontFamily: 'Roboto',
     scaffoldBackgroundColor: scheme.surface,
+    textTheme: ThemeData(brightness: brightness).textTheme.apply(
+      bodyColor: scheme.onSurface,
+      displayColor: scheme.onSurface,
+    ),
     appBarTheme: AppBarTheme(
       elevation: 0,
       scrolledUnderElevation: 2,
@@ -69,6 +74,11 @@ ThemeData uniTheme(Brightness brightness) {
       color: brightness == Brightness.light
           ? scheme.surfaceContainerLow
           : const Color(0xFF323B52), // Koyu temada kartlar belirgin
+    ),
+    iconTheme: IconThemeData(color: scheme.onSurfaceVariant),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: UniBrand.accent,
+      foregroundColor: Colors.white,
     ),
     drawerTheme: DrawerThemeData(
       backgroundColor: brightness == Brightness.light
@@ -167,6 +177,8 @@ ThemeData uniTheme(Brightness brightness) {
         : const Color(0xFF3B4252),
       contentTextStyle: const TextStyle(color: Colors.white),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: scheme.inverseSurface,
+      contentTextStyle: TextStyle(color: scheme.onInverseSurface),
     ),
     dividerTheme: DividerThemeData(
       color: scheme.outlineVariant.withValues(

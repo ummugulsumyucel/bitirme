@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import '../theme/uni_theme.dart';
+import '../widgets/common_drawer.dart';
 import 'login_page.dart';
 import 'register_page.dart';
 import 'calendar_page.dart';
@@ -56,11 +58,15 @@ class HomePage extends StatelessWidget {
     }
 
     return Scaffold(
-      drawer: _buildDrawer(context),
+      drawer: CommonDrawer(
+        onToggleTheme: onToggleDarkMode,
+        isDarkMode: isDarkMode,
+        selectedPage: 'home',
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(context),
             Expanded(child: content),
           ],
         ),
@@ -68,18 +74,19 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
-      color: const Color(0xFF1E3A8A),
+      color: scheme.primary,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          const Icon(Icons.school, color: Colors.white),
+          Icon(Icons.school, color: scheme.onPrimary),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             'UniConnect',
             style: TextStyle(
-              color: Colors.white,
+              color: scheme.onPrimary,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
@@ -88,13 +95,13 @@ class HomePage extends StatelessWidget {
           IconButton(
             icon: Icon(
               isDarkMode ? Icons.light_mode : Icons.dark_mode,
-              color: Colors.white,
+              color: scheme.onPrimary,
             ),
             onPressed: onToggleDarkMode,
           ),
           Builder(
             builder: (context) => IconButton(
-              icon: const Icon(Icons.menu, color: Colors.white),
+              icon: Icon(Icons.menu, color: scheme.onPrimary),
               onPressed: () {
                 Scaffold.of(context).openDrawer();
               },
@@ -111,54 +118,177 @@ class HomePage extends StatelessWidget {
 
   Widget _buildHeroSection(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            scheme.primaryContainer.withValues(alpha: 0.65),
-            scheme.tertiaryContainer.withValues(alpha: 0.5),
-            scheme.secondaryContainer.withValues(alpha: 0.4),
-          ],
-        ),
+
+    final List<Map<String, dynamic>> bannerItems = [
+      {
+        'title': 'Tüm kampüs hayatınız\ntek bir yerde!',
+        'subtitle': 'Akademik ve sosyal yaşamınızı kolayca yönetin!',
+        'description':
+            'Ders programınız, etkinlikler, duyurular ve ilanlar… Hepsi cebinizde.',
+        'icon': Icons.dashboard_rounded,
+        'gradient': [
+          scheme.primaryContainer.withValues(alpha: 0.65),
+          scheme.tertiaryContainer.withValues(alpha: 0.5),
+          scheme.secondaryContainer.withValues(alpha: 0.4),
+        ],
+      },
+      {
+        'title': 'Kampüs hayatını\nkaçırma!',
+        'subtitle': 'Etkinliklerden haberdar ol',
+        'description':
+            'Dersleri takip et, etkinliklerden haberdar ol, yeni arkadaşlıklar kur.',
+        'icon': Icons.celebration_rounded,
+        'gradient': [
+          scheme.secondaryContainer.withValues(alpha: 0.65),
+          scheme.primaryContainer.withValues(alpha: 0.5),
+          scheme.tertiaryContainer.withValues(alpha: 0.4),
+        ],
+      },
+      {
+        'title': 'UniConnect ile\nbağlı kal!',
+        'subtitle': 'Kampüs topluluğunun bir parçası ol',
+        'description':
+            'Kulüpleri keşfet, etkinliklere katıl, notlarını paylaş.',
+        'icon': Icons.groups_rounded,
+        'gradient': [
+          scheme.tertiaryContainer.withValues(alpha: 0.65),
+          scheme.secondaryContainer.withValues(alpha: 0.5),
+          scheme.primaryContainer.withValues(alpha: 0.4),
+        ],
+      },
+    ];
+
+    return CarouselSlider(
+      options: CarouselOptions(
+        height: 220,
+        viewportFraction: 1.0,
+        autoPlay: true,
+        autoPlayInterval: const Duration(seconds: 5),
+        autoPlayAnimationDuration: const Duration(milliseconds: 800),
+        autoPlayCurve: Curves.fastOutSlowIn,
+        enlargeCenterPage: false,
       ),
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: scheme.primary,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: scheme.primary.withValues(alpha: 0.35),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.school_rounded,
-                  color: scheme.onPrimary,
-                  size: 30,
+      items: bannerItems.map((item) {
+        return Builder(
+          builder: (BuildContext context) {
+            return Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: item['gradient'] as List<Color>,
                 ),
               ),
-              const SizedBox(width: 14),
-              Text(
-                'UniConnect',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: scheme.primary,
-                  letterSpacing: -0.5,
-                ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Row(
+                children: [
+                  // Sol taraf - İçerik
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: scheme.primary,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: scheme.primary.withValues(
+                                      alpha: 0.35,
+                                    ),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.school_rounded,
+                                color: scheme.onPrimary,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Flexible(
+                              child: Text(
+                                'UniConnect',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: scheme.onSurface,
+                                  letterSpacing: -0.5,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          item['subtitle'] as String,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          item['title'] as String,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            height: 1.15,
+                            color: scheme.onSurface,
+                            letterSpacing: -0.8,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          item['description'] as String,
+                          style: TextStyle(
+                            fontSize: 10,
+                            height: 1.4,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Sağ taraf - Büyük İkon
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      height: 160,
+                      decoration: BoxDecoration(
+                        color: scheme.primaryContainer.withValues(alpha: 0.32),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          item['icon'] as IconData,
+                          size: 90,
+                          color: scheme.onPrimaryContainer.withValues(
+                            alpha: 0.88,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -230,18 +360,10 @@ class HomePage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: scheme.primary,
+                  color: scheme.onSurface,
                 ),
               ),
             ],
-          ),
-        ),
-        // Alt başlık
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Text(
-            'Öne Çıkan Etkinlikler',
-            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
           ),
         ),
 
@@ -343,6 +465,7 @@ class HomePage extends StatelessWidget {
     final date = (eventData['date'] as String?)?.trim() ?? '';
     final time = (eventData['time'] as String?)?.trim() ?? '';
     final category = (eventData['category'] as String?)?.trim() ?? '';
+    final eventId = eventData['id'] as String?;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -577,7 +700,7 @@ class HomePage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: scheme.primary,
+                  color: scheme.onSurface,
                 ),
               ),
             ],
@@ -701,7 +824,7 @@ class HomePage extends StatelessWidget {
                       '${news.date ?? ''} · ${news.views ?? '0 okunma'}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -724,10 +847,7 @@ class HomePage extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            scheme.primary,
-            Color.lerp(scheme.primary, Colors.black, 0.2)!,
-          ],
+          colors: [scheme.primary, scheme.secondary],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -775,27 +895,12 @@ class HomePage extends StatelessWidget {
 
                   return Column(
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // Sol: istatistikler
-                          _buildStatistic(
-                            context,
-                            Icons.people_alt_rounded,
-                            '4.740',
-                            'Öğrenci',
-                          ),
-                          const SizedBox(width: 14),
-                          _buildStatistic(
-                            context,
-                            Icons.event_available_rounded,
-                            '565',
-                            'Etkinlik',
-                          ),
-                          const Spacer(),
-                          // Sağ: arama kutusu
-                          SizedBox(
-                            width: 180,
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final compact = constraints.maxWidth < 380;
+
+                          final searchField = SizedBox(
+                            width: compact ? double.infinity : 180,
                             height: 32,
                             child: TextField(
                               onChanged: (v) =>
@@ -842,8 +947,60 @@ class HomePage extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          );
+
+                          if (compact) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildStatistic(
+                                        context,
+                                        Icons.people_alt_rounded,
+                                        '4.740',
+                                        'Öğrenci',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _buildStatistic(
+                                        context,
+                                        Icons.event_available_rounded,
+                                        '565',
+                                        'Etkinlik',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                searchField,
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              _buildStatistic(
+                                context,
+                                Icons.people_alt_rounded,
+                                '4.740',
+                                'Öğrenci',
+                              ),
+                              const SizedBox(width: 14),
+                              _buildStatistic(
+                                context,
+                                Icons.event_available_rounded,
+                                '565',
+                                'Etkinlik',
+                              ),
+                              const Spacer(),
+                              searchField,
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 10),
                       SizedBox(
@@ -1046,185 +1203,6 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context) {
-    final authService = AuthService();
-    final isLoggedIn = authService.isLoggedIn;
-
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(color: Color(0xFF1E3A8A)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                const Icon(Icons.school, color: Colors.white, size: 48),
-                const SizedBox(height: 8),
-                const Text(
-                  'UniConnect',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (isLoggedIn) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    authService.currentUserName ?? 'Kullanıcı',
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Ana Sayfa'),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.calendar_today),
-            title: const Text('Etkinlikler'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EventsScreen(
-                    embeddedInShell: false,
-                    onToggleTheme: onToggleDarkMode,
-                    isDarkMode: isDarkMode,
-                  ),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.calendar_month),
-            title: const Text('Takvim'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CalendarPage()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Profilim'),
-            onTap: () {
-              Navigator.pop(context);
-              if (!isLoggedIn) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProfileScreen(
-                      embeddedInShell: false,
-                      onToggleTheme: onToggleDarkMode,
-                      isDarkMode: isDarkMode,
-                    ),
-                  ),
-                );
-              }
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.campaign),
-            title: const Text('İlanlar'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AnnouncementsPage(
-                    onToggleDarkMode: onToggleDarkMode,
-                    isDarkMode: isDarkMode,
-                  ),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.note),
-            title: const Text('Notlar'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      const NotesFeedScreen(embeddedInShell: false),
-                ),
-              );
-            },
-          ),
-          const Divider(),
-          if (!isLoggedIn) ...[
-            ListTile(
-              leading: const Icon(Icons.login),
-              title: const Text('Giriş Yap'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_add),
-              title: const Text('Kayıt Ol'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const RegisterPage()),
-                );
-              },
-            ),
-          ] else ...[
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Çıkış Yap'),
-              onTap: () async {
-                Navigator.pop(context);
-                await authService.logout();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Başarıyla çıkış yapıldı'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
-            ),
-          ],
-          const Divider(),
-          ListTile(
-            leading: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
-            title: Text(isDarkMode ? 'Açık Mod' : 'Koyu Mod'),
-            onTap: () {
-              onToggleDarkMode();
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
     );
   }
 }

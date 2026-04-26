@@ -9,7 +9,6 @@ class ClubLogoService {
     if (_logoCache.containsKey(logoUrl)) {
       return _logoCache[logoUrl];
     }
-
     try {
       // Proxy kullanarak logoyu indir
       final proxyUrl =

@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../services/note_upload.dart';
 import '../services/session_service.dart';
+import '../services/notification_service.dart';
+import '../widgets/loading_widget.dart';
+import '../widgets/error_widget.dart';
 import 'announcements_page.dart';
 import 'calendar_page.dart';
 import 'events_screen.dart';
@@ -32,6 +38,7 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
   String _selectedSemester = '1. Sınıf';
   String _selectedType = 'Ders Notu';
   bool _isSubmitting = false;
+  String? _submitStatus;
   PlatformFile? _pickedFile;
   bool _isPickingFile = false;
 
@@ -46,124 +53,139 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      drawer: _buildDrawer(context),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Yeni Not Paylaş',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E3A8A),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Ders notlarını diğer öğrencilerle paylaşarak topluluk içinde bilgi akışına katkı sağla.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF666666),
-                          height: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildTypeSelector(),
-                      const SizedBox(height: 16),
-                      _buildLabeledField(
-                        label: 'Ders Adı',
-                        child: TextField(
-                          controller: _courseController,
-                          decoration: _inputDecoration(
-                            hintText: 'Örn: Matematik I',
+    return LoadingOverlay(
+      isLoading: _isSubmitting,
+      loadingMessage: _submitStatus,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        drawer: _buildDrawer(context),
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(context),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Container(
+                    margin: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Yeni Not Paylaş',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E3A8A),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildLabeledField(
-                        label: 'Not Başlığı',
-                        child: TextField(
-                          controller: _titleController,
-                          decoration: _inputDecoration(
-                            hintText: 'Örn: Vize Konu Özeti',
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Ders notlarını diğer öğrencilerle paylaşarak topluluk içinde bilgi akışına katkı sağla.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF666666),
+                            height: 1.5,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildLabeledField(
-                        label: 'Bölüm',
-                        child: TextField(
-                          controller: _departmentController,
-                          decoration: _inputDecoration(
-                            hintText: 'Örn: Bilgisayar Mühendisliği',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildLabeledField(
-                        label: 'Dönem / Sınıf',
-                        child: _buildSemesterDropdown(),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildLabeledField(
-                        label: 'Kısa Açıklama',
-                        child: TextField(
-                          controller: _descriptionController,
-                          maxLines: 4,
-                          decoration: _inputDecoration(
-                            hintText:
-                                'Bu notta hangi konular var, hangi sınav için hazırlandı gibi bilgileri yaz.',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildLabeledField(
-                        label: 'Dosya Ekle (PDF / Görsel)',
-                        child: _buildFilePickerPlaceholder(),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5A7FCF),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          onPressed: _isSubmitting ? null : _submitNote,
-                          child: Text(
-                            _isSubmitting ? 'Paylasiliyor...' : 'Notu Paylas',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
+                        const SizedBox(height: 20),
+                        _buildTypeSelector(),
+                        const SizedBox(height: 16),
+                        _buildLabeledField(
+                          label: 'Ders Adı',
+                          child: TextField(
+                            controller: _courseController,
+                            decoration: _inputDecoration(
+                              hintText: 'Örn: Matematik I',
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        _buildLabeledField(
+                          label: 'Not Başlığı',
+                          child: TextField(
+                            controller: _titleController,
+                            decoration: _inputDecoration(
+                              hintText: 'Örn: Vize Konu Özeti',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildLabeledField(
+                          label: 'Bölüm',
+                          child: TextField(
+                            controller: _departmentController,
+                            decoration: _inputDecoration(
+                              hintText: 'Örn: Bilgisayar Mühendisliği',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildLabeledField(
+                          label: 'Dönem / Sınıf',
+                          child: _buildSemesterDropdown(),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildLabeledField(
+                          label: 'Kısa Açıklama',
+                          child: TextField(
+                            controller: _descriptionController,
+                            maxLines: 4,
+                            decoration: _inputDecoration(
+                              hintText:
+                                  'Bu notta hangi konular var, hangi sınav için hazırlandı gibi bilgileri yaz.',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildLabeledField(
+                          label: 'Dosya Ekle (PDF / Görsel)',
+                          child: _buildFilePickerPlaceholder(),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5A7FCF),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            onPressed: _isSubmitting ? null : _submitNote,
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Notu Paylaş',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -212,12 +234,12 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
   }
 
   Widget _buildTypeSelector() {
-    return Row(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
       children: [
         _buildChip('Ders Notu'),
-        const SizedBox(width: 8),
         _buildChip('Soru Çözümü'),
-        const SizedBox(width: 8),
         _buildChip('Özet / Slayt'),
       ],
     );
@@ -225,36 +247,30 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
 
   Widget _buildChip(String value) {
     final bool isSelected = _selectedType == value;
-    return Expanded(
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            _selectedType = value;
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-          decoration: BoxDecoration(
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedType = value;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF1E3A8A) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
             color: isSelected
                 ? const Color(0xFF1E3A8A)
-                : const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? const Color(0xFF1E3A8A)
-                  : const Color(0xFFE0E0E0),
-            ),
+                : const Color(0xFFE0E0E0),
           ),
-          child: Center(
-            child: Text(
-              value,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : const Color(0xFF1E3A8A),
-              ),
-            ),
+        ),
+        child: Text(
+          value,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : const Color(0xFF1E3A8A),
           ),
         ),
       ),
@@ -505,6 +521,20 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
   }
 
   Future<void> _submitNote() async {
+    if (_isSubmitting) return;
+
+    // Oturum kontrolü
+    final authService = AuthService();
+    if (!authService.isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Not paylaşmak için giriş yapman gerekiyor.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     final course = _courseController.text.trim();
     final title = _titleController.text.trim();
     final description = _descriptionController.text.trim();
@@ -522,252 +552,463 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
 
     setState(() {
       _isSubmitting = true;
+      _submitStatus = _pickedFile != null
+          ? 'Dosya yukleniyor...'
+          : 'Not kaydediliyor...';
     });
 
     try {
-      String? fileUrl;
-      String? fileName;
-      String? fileMime;
-
-      if (_pickedFile != null) {
-        fileUrl = await uploadNoteFile(_pickedFile!);
-        if (fileUrl == null) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Dosya yüklenemedi. Daha küçük bir dosya deneyin veya tekrar seçin.',
-              ),
-            ),
-          );
-          return;
-        }
-        fileName = _pickedFile!.name;
-        final ext = _pickedFile!.extension?.toLowerCase();
-        fileMime = switch (ext) {
-          'pdf' => 'application/pdf',
-          'png' => 'image/png',
-          'jpg' => 'image/jpeg',
-          'jpeg' => 'image/jpeg',
-          'webp' => 'image/webp',
-          _ => null,
-        };
-      }
-
-      final uploader = await _resolveUploader();
-
-      await FirebaseFirestore.instance.collection('notes').add({
-        'course': course,
-        'title': title,
-        'description': description,
-        'department': department,
-        'semester': _selectedSemester,
-        'type': _selectedType,
-        'uploaderName': uploader.name,
-        'uploaderUserDocId': uploader.userDocId,
-        'fileUrl': fileUrl,
-        'fileName': fileName,
-        'fileMimeType': fileMime,
-        'ratingAvg': 0.0,
-        'ratingCount': 0,
-        'downloadCount': 0,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await _submitNoteCore(
+        course: course,
+        title: title,
+        description: description,
+        department: department,
+      ).timeout(const Duration(seconds: 70));
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Not başarıyla paylaşıldı.')),
-      );
+
+      // Send notification to all users about new note
+      await _sendNewNoteNotification(title, course);
+
+      SuccessSnackBar.show(context, 'Not başarıyla paylaşıldı!');
       Navigator.pop(context);
-    } catch (e) {
+    } on TimeoutException {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      ErrorSnackBar.show(
         context,
-      ).showSnackBar(SnackBar(content: Text('Bir hata oluştu: $e')));
+        'Yükleme zaman aşımına uğradı. İnternet bağlantını kontrol edip tekrar dene.',
+      );
+    } catch (e) {
+      debugPrint('_submitNote error: $e');
+      if (!mounted) return;
+      ErrorSnackBar.show(
+        context,
+        'Not paylaşılırken hata oluştu: ${e.toString()}',
+        actionLabel: 'Tekrar Dene',
+        onAction: _submitNote,
+      );
     } finally {
       if (mounted) {
         setState(() {
           _isSubmitting = false;
+          _submitStatus = null;
         });
       }
+    }
+  }
+
+  Future<void> _submitNoteCore({
+    required String course,
+    required String title,
+    required String description,
+    required String department,
+  }) async {
+    String? fileUrl;
+    String? fileName;
+    String? fileMime;
+
+    if (_pickedFile != null) {
+      // Web'de bytes null ise hata ver
+      if (kIsWeb &&
+          (_pickedFile!.bytes == null || _pickedFile!.bytes!.isEmpty)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Dosya okunamadı. Lütfen dosyayı tekrar seçin.'),
+          ),
+        );
+        throw Exception('File bytes are null');
+      }
+
+      try {
+        fileUrl = await uploadNoteFile(
+          _pickedFile!,
+        ).timeout(const Duration(seconds: 45));
+      } catch (e) {
+        debugPrint('uploadNoteFile error: $e');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Dosya yuklenemedi: $e'),
+            duration: const Duration(seconds: 6),
+          ),
+        );
+        rethrow;
+      }
+
+      if (fileUrl == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Dosya yuklenemedi. Internetini kontrol edip yeniden dene.',
+            ),
+          ),
+        );
+        throw Exception('File upload returned null URL');
+      }
+      fileName = _pickedFile!.name;
+      final ext = _pickedFile!.extension?.toLowerCase();
+      fileMime = switch (ext) {
+        'pdf' => 'application/pdf',
+        'png' => 'image/png',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'webp' => 'image/webp',
+        _ => null,
+      };
+    }
+
+    if (mounted) {
+      setState(() => _submitStatus = 'Not veritabanına kaydediliyor...');
+    }
+    final uploader = await _resolveUploader().timeout(
+      const Duration(seconds: 12),
+      onTimeout: () => (name: 'Öğrenci', userDocId: null),
+    );
+
+    await FirebaseFirestore.instance
+        .collection('notes')
+        .add({
+          'course': course,
+          'title': title,
+          'description': description,
+          'department': department,
+          'semester': _selectedSemester,
+          'type': _selectedType,
+          'uploaderName': uploader.name,
+          'uploaderUserDocId': uploader.userDocId,
+          'fileUrl': fileUrl,
+          'fileName': fileName,
+          'fileMimeType': fileMime,
+          'ratingAvg': 0.0,
+          'ratingCount': 0,
+          'downloadCount': 0,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        })
+        .timeout(const Duration(seconds: 20));
+  }
+
+  Future<void> _sendNewNoteNotification(String title, String course) async {
+    try {
+      // Get all users to send notification
+      final usersSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      final userIds = usersSnapshot.docs
+          .map((doc) => doc.id)
+          .where((id) => id != FirebaseAuth.instance.currentUser?.uid)
+          .toList();
+
+      if (userIds.isNotEmpty) {
+        await NotificationService().sendBulkNotification(
+          userIds: userIds,
+          title: 'Yeni Not Paylaşıldı',
+          body: '$course dersi için "$title" notu paylaşıldı',
+          type: 'note',
+          data: {'course': course, 'noteTitle': title},
+        );
+      }
+    } catch (e) {
+      debugPrint('Error sending notification: $e');
+      // Don't throw error, notification is not critical
     }
   }
 
   Widget _buildDrawer(BuildContext context) {
     final authService = AuthService();
     final isLoggedIn = authService.isLoggedIn;
+    final scheme = Theme.of(context).colorScheme;
 
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(color: Color(0xFF1E3A8A)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                const Icon(Icons.school, color: Colors.white, size: 48),
-                const SizedBox(height: 8),
-                const Text(
-                  'UniConnect',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+      child: Builder(
+        builder: (drawerContext) {
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      scheme.primary,
+                      Color.lerp(
+                        scheme.primary,
+                        const Color(0xFF0F1729),
+                        0.35,
+                      )!,
+                    ],
                   ),
-                ),
-                if (isLoggedIn) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    authService.currentUserName ?? 'Kullanıcı',
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Ana Sayfa'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.calendar_today),
-            title: const Text('Etkinlikler'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EventsScreen(
-                    embeddedInShell: false,
-                    onToggleTheme: widget.onToggleTheme,
-                    isDarkMode: widget.isDarkMode,
-                  ),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.calendar_month),
-            title: const Text('Takvim'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const CalendarPage()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Profilim'),
-            onTap: () {
-              Navigator.pop(context);
-              if (!isLoggedIn) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              } else {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProfileScreen(
-                      embeddedInShell: false,
-                      onToggleTheme: widget.onToggleTheme,
-                      isDarkMode: widget.isDarkMode,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: scheme.primary.withValues(alpha: 0.35),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
-                  ),
-                );
-              }
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.campaign),
-            title: const Text('İlanlar'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AnnouncementsPage(
-                    onToggleDarkMode: widget.onToggleTheme ?? () {},
-                    isDarkMode: widget.isDarkMode,
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(32),
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      child: Image.asset(
+                        'assets/images/logo1.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.school_rounded,
+                            color: scheme.primary,
+                            size: 36,
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'UniConnect',
+                      style: TextStyle(
+                        color: scheme.onPrimary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Kampüs hayatı tek uygulamada',
+                      style: TextStyle(
+                        color: scheme.onPrimary.withValues(alpha: 0.85),
+                        fontSize: 13,
+                      ),
+                    ),
+                    if (isLoggedIn) ...[
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.person_rounded,
+                            size: 18,
+                            color: scheme.onPrimary.withValues(alpha: 0.9),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              authService.currentUserName ?? 'Kullanıcı',
+                              style: TextStyle(
+                                color: scheme.onPrimary.withValues(alpha: 0.95),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.only(left: 8, bottom: 6),
+                child: Text(
+                  'MENÜ',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.note),
-            title: const Text('Notlar'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-          ),
-          const Divider(),
-          if (!isLoggedIn) ...[
-            ListTile(
-              leading: const Icon(Icons.login),
-              title: const Text('Giriş Yap'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_add),
-              title: const Text('Kayıt Ol'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const RegisterPage()),
-                );
-              },
-            ),
-          ] else ...[
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Çıkış Yap'),
-              onTap: () async {
-                Navigator.pop(context);
-                await authService.logout();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Başarıyla çıkış yapıldı'),
-                      duration: Duration(seconds: 2),
+              ),
+              ListTile(
+                leading: const Icon(Icons.home_outlined),
+                title: const Text('Ana Sayfa'),
+                selected: false,
+                onTap: () {
+                  Navigator.pop(drawerContext);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_month_outlined),
+                title: const Text('Takvim'),
+                selected: false,
+                onTap: () {
+                  Navigator.pop(drawerContext);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CalendarPage(),
                     ),
                   );
-                }
-              },
-            ),
-          ],
-          const Divider(),
-          ListTile(
-            leading: Icon(
-              widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-            ),
-            title: Text(widget.isDarkMode ? 'Açık Mod' : 'Koyu Mod'),
-            onTap: () {
-              if (widget.onToggleTheme != null) {
-                widget.onToggleTheme!();
-              }
-              Navigator.pop(context);
-            },
-          ),
-        ],
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.person_outline),
+                title: const Text('Profilim'),
+                selected: false,
+                onTap: () {
+                  Navigator.pop(drawerContext);
+                  if (!isLoggedIn) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginPage(),
+                      ),
+                    );
+                  } else {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProfileScreen(
+                          embeddedInShell: false,
+                          onToggleTheme: widget.onToggleTheme,
+                          isDarkMode: widget.isDarkMode,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+              const Divider(height: 32),
+              ListTile(
+                leading: const Icon(Icons.event_outlined),
+                title: const Text('Etkinlikler'),
+                selected: false,
+                onTap: () {
+                  Navigator.pop(drawerContext);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EventsScreen(
+                        embeddedInShell: false,
+                        onToggleTheme: widget.onToggleTheme,
+                        isDarkMode: widget.isDarkMode,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.campaign_outlined),
+                title: const Text('İlanlar'),
+                selected: false,
+                onTap: () {
+                  Navigator.pop(drawerContext);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AnnouncementsPage(
+                        onToggleDarkMode: widget.onToggleTheme ?? () {},
+                        isDarkMode: widget.isDarkMode,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.menu_book_outlined),
+                title: const Text('Notlar'),
+                selected: true, // Bu sayfa notlar ile ilgili olduğu için seçili
+                onTap: () {
+                  Navigator.pop(drawerContext);
+                  Navigator.pop(context); // Notlar sayfasına geri dön
+                },
+              ),
+              const Divider(height: 32),
+              ListTile(
+                leading: const Icon(Icons.restaurant_menu),
+                title: const Text('Yemek Menüsü'),
+                selected: false,
+                onTap: () {
+                  Navigator.pop(drawerContext);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.feedback_outlined),
+                title: const Text('Öneri / Şikayet'),
+                selected: false,
+                onTap: () {
+                  Navigator.pop(drawerContext);
+                  Navigator.pop(context);
+                },
+              ),
+              const Divider(),
+              if (!isLoggedIn) ...[
+                ListTile(
+                  leading: const Icon(Icons.login),
+                  title: const Text('Giriş Yap'),
+                  onTap: () {
+                    Navigator.pop(drawerContext);
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginPage(),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.person_add),
+                  title: const Text('Kayıt Ol'),
+                  onTap: () {
+                    Navigator.pop(drawerContext);
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RegisterPage(),
+                      ),
+                    );
+                  },
+                ),
+              ] else ...[
+                ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: const Text('Çıkış Yap'),
+                  onTap: () async {
+                    Navigator.pop(drawerContext);
+                    await authService.logout();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Başarıyla çıkış yapıldı'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+              const Divider(),
+              ListTile(
+                leading: Icon(
+                  widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                ),
+                title: Text(widget.isDarkMode ? 'Açık Mod' : 'Koyu Mod'),
+                onTap: () {
+                  if (widget.onToggleTheme != null) {
+                    widget.onToggleTheme!();
+                  }
+                  Navigator.pop(drawerContext);
+                },
+              ),
+            ],
+          );
+        },
       ),
     );
   }

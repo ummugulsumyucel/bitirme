@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../services/auth_service.dart';
 import 'event_detail_screen.dart';
 import 'new_event_screen.dart';
 
@@ -135,6 +136,7 @@ class _EventsScreenState extends State<EventsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final scroll = SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -210,16 +212,16 @@ class _EventsScreenState extends State<EventsScreen> {
                               child: Text(
                                 categoryLabel,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF6B7280),
+                                  color: scheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.keyboard_arrow_down_rounded,
                               size: 18,
-                              color: Color(0xFF6B7280),
+                              color: scheme.onSurfaceVariant,
                             ),
                           ],
                         ),
@@ -251,16 +253,16 @@ class _EventsScreenState extends State<EventsScreen> {
                               child: Text(
                                 timeLabel,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF6B7280),
+                                  color: scheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.access_time_rounded,
                               size: 18,
-                              color: Color(0xFF6B7280),
+                              color: scheme.onSurfaceVariant,
                             ),
                           ],
                         ),
@@ -279,7 +281,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 child: TextField(
                   controller: _searchController,
                   onChanged: (_) => setState(() {}),
-                  style: const TextStyle(fontSize: 12),
+                  style: TextStyle(fontSize: 12, color: scheme.onSurface),
                   decoration: InputDecoration(
                     hintText: 'Etkinlik Ara...',
                     hintStyle: TextStyle(
@@ -331,6 +333,14 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Widget _buildAddEventButton(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final auth = AuthService();
+
+    // Sadece admin veya kulüp başkanı görebilir
+    if (!auth.isLoggedIn || !auth.canAddEvent) {
+      return const SizedBox.shrink();
+    }
+
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
@@ -363,13 +373,14 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Widget _buildEventsList(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance.collection('events').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Text(
             'Etkinlikler yuklenirken bir hata olustu: ${snapshot.error}',
-            style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+            style: TextStyle(color: scheme.error, fontSize: 13),
           );
         }
 
@@ -391,7 +402,7 @@ class _EventsScreenState extends State<EventsScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: scheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -410,7 +421,7 @@ class _EventsScreenState extends State<EventsScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: scheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -574,7 +585,7 @@ class _EventsScreenState extends State<EventsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(icon, size: 40, color: const Color(0xFF111827)),
+                Icon(icon, size: 40, color: scheme.onSurface),
                 if (label.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -582,7 +593,7 @@ class _EventsScreenState extends State<EventsScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: labelColor.withOpacity(0.12),
+                      color: labelColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(

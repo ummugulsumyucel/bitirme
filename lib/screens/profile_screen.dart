@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../services/auth_service.dart';
 import '../services/profile_photo_service.dart';
@@ -79,7 +82,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    final source = await showModalBottomSheet<ImageSource>(
+    if (kIsWeb) {
+      // Web'de FilePicker kullan
+      setState(() => _uploadingPhoto = true);
+      try {
+        final file = await pickProfileImageWeb();
+        if (file == null || !mounted) {
+          setState(() => _uploadingPhoto = false);
+          return;
+        }
+        final url = await uploadProfilePhoto(uid, file);
+        await FirebaseFirestore.instance.collection('users').doc(uid).update({
+          'photoUrl': url,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profil fotoğrafı güncellendi.'),
+              backgroundColor: Color(0xFF5A7FCF),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Yükleme başarısız: $e')));
+        }
+      } finally {
+        if (mounted) setState(() => _uploadingPhoto = false);
+      }
+      return;
+    }
+
+    // Mobil: ImagePicker ile kaynak seç
+    final source = await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(
@@ -88,12 +126,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
               title: const Text('Galeriden seç'),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
               title: const Text('Kamera ile çek'),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              onTap: () => Navigator.pop(ctx, 'camera'),
             ),
           ],
         ),
@@ -101,24 +139,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     if (source == null || !mounted) return;
 
-    final picker = ImagePicker();
-    final x = await picker.pickImage(
-      source: source,
-      maxWidth: 1200,
-      imageQuality: 85,
-    );
-    if (x == null || !mounted) return;
-
     setState(() => _uploadingPhoto = true);
     try {
-      final url = await uploadProfilePhoto(uid, x);
+      // Mobil'de image_picker kullan
+      // ignore: depend_on_referenced_packages
+      final picker = _MobileImagePicker();
+      final file = await picker.pick(source);
+      if (file == null || !mounted) {
+        setState(() => _uploadingPhoto = false);
+        return;
+      }
+      final url = await uploadProfilePhoto(uid, file);
       await FirebaseFirestore.instance.collection('users').doc(uid).update({
         'photoUrl': url,
         'updatedAt': FieldValue.serverTimestamp(),
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profil fotoğrafı güncellendi.')),
+          const SnackBar(
+            content: Text('Profil fotoğrafı güncellendi.'),
+            backgroundColor: Color(0xFF5A7FCF),
+          ),
         );
       }
     } catch (e) {
@@ -274,6 +315,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 12),
                       _buildMyEventsSection(_userDocId!),
                       const SizedBox(height: 12),
+                      _buildMyPersonalEventsSection(_userDocId!),
+                      const SizedBox(height: 12),
                       _buildMyListingsSection(_userDocId!),
                       const SizedBox(height: 12),
                       _buildMyNotesSection(_userDocId!),
@@ -369,21 +412,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildProfileAvatar(String? photoUrl) {
     final url = photoUrl?.trim();
-    final uri = url != null && url.isNotEmpty ? Uri.tryParse(url) : null;
+    if (url == null || url.isEmpty) {
+      return _avatarPlaceholder();
+    }
+
+    // base64 data URL
+    if (url.startsWith('data:image/')) {
+      try {
+        final commaIndex = url.indexOf(',');
+        if (commaIndex != -1) {
+          final bytes = base64Decode(url.substring(commaIndex + 1));
+          return Image.memory(
+            bytes,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _avatarPlaceholder(),
+          );
+        }
+      } catch (_) {}
+      return _avatarPlaceholder();
+    }
+
+    // https URL
+    final uri = Uri.tryParse(url);
     final ok =
         uri != null &&
         (uri.isScheme('http') || uri.isScheme('https')) &&
         uri.host.isNotEmpty;
 
-    if (!ok) {
-      return Image.asset('assets/images/placeholder.png', fit: BoxFit.cover);
-    }
+    if (!ok) return _avatarPlaceholder();
 
     return Image.network(
       uri.toString(),
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) =>
-          Image.asset('assets/images/placeholder.png', fit: BoxFit.cover),
+      errorBuilder: (_, __, ___) => _avatarPlaceholder(),
       loadingBuilder: (_, child, progress) {
         if (progress == null) return child;
         return const Center(
@@ -394,6 +455,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _avatarPlaceholder() {
+    return Container(
+      color: const Color(0xFFE8EEF9),
+      child: const Icon(Icons.person, size: 48, color: Color(0xFF5A7FCF)),
     );
   }
 
@@ -645,6 +713,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return '${dt.day}.${dt.month}.${dt.year}';
     }
     return null;
+  }
+
+  Widget _buildMyPersonalEventsSection(String userDocId) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('personal_events')
+          .where('userId', isEqualTo: userDocId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final docs = [...(snapshot.data?.docs ?? [])];
+        if (docs.isEmpty) return const SizedBox.shrink();
+        docs.sort((a, b) {
+          final ta = a.data()['createdAt'];
+          final tb = b.data()['createdAt'];
+          final ma = ta is Timestamp ? ta.millisecondsSinceEpoch : 0;
+          final mb = tb is Timestamp ? tb.millisecondsSinceEpoch : 0;
+          return mb.compareTo(ma);
+        });
+        return _buildSectionCard(
+          title: 'Kişisel Etkinliklerim',
+          trailing: _buildBadge('${docs.length} kayıt'),
+          child: Column(
+            children: List.generate(docs.length, (i) {
+              final d = docs[i].data();
+              return Padding(
+                padding: EdgeInsets.only(bottom: i < docs.length - 1 ? 8 : 0),
+                child: _buildEventItem(
+                  title: (d['title'] as String?) ?? 'Etkinlik',
+                  subtitle: (d['place'] as String?) ?? '',
+                  date: (d['date'] as String?) ?? '',
+                ),
+              );
+            }),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildMyListingsSection(String userDocId) {
@@ -1097,5 +1202,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
       ),
     );
+  }
+}
+
+/// Mobil platformlarda image_picker ile fotoğraf seçer
+class _MobileImagePicker {
+  Future<PlatformFile?> pick(String source) async {
+    try {
+      // image_picker yerine file_picker kullan (daha güvenilir)
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return null;
+      final file = result.files.single;
+      if (file.bytes == null || file.bytes!.isEmpty) return null;
+      return file;
+    } catch (e) {
+      debugPrint('_MobileImagePicker.pick: $e');
+      return null;
+    }
   }
 }

@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
 
 class KluClub {
@@ -22,13 +19,6 @@ class KluClub {
 }
 
 class KluClubsService {
-  /// Firebase Functions (HTTPS) endpoint.
-  ///
-  /// Deploy sonrası URL şu formdadır:
-  /// `https://us-central1-<projectId>.cloudfunctions.net/kluSupportingClubs`
-  static const String _endpoint =
-      'https://us-central1-bitirme-a6f96.cloudfunctions.net/kluSupportingClubs';
-  static const String _sourceUrl = 'https://ogrkulup.klu.edu.tr/';
   static const String _jinaMirrorUrl =
       'https://r.jina.ai/http://ogrkulup.klu.edu.tr/';
 
@@ -98,72 +88,6 @@ class KluClubsService {
     }
 
     return fallbackClubs;
-  }
-
-  List<KluClub> _parseFunctionClubs(dynamic raw) {
-    if (raw is! List) return <KluClub>[];
-    final out = <KluClub>[];
-    for (final item in raw) {
-      // Eski Function sürümünde sadece isim döner; link olmadığı için
-      // bu durumda aşağıdaki HTML parse fallback'ine düşmek daha doğru.
-      if (item is String) continue;
-      if (item is Map) {
-        final name = (item['name'] ?? '').toString().trim();
-        final url = (item['url'] ?? _sourceUrl).toString().trim();
-        if (name.isEmpty) continue;
-        out.add(KluClub(name: name, url: _normalizeUrl(url)));
-      }
-    }
-    return out;
-  }
-
-  List<KluClub> _extractClubs(String html) {
-    final doc = html_parser.parse(html);
-    final clubs = <KluClub>[];
-    final seen = <String>{};
-
-    for (final a in doc.querySelectorAll('a[href*="kulupGoruntule"]')) {
-      final name = a.text.trim();
-      if (name.isEmpty) continue;
-      final href = (a.attributes['href'] ?? '').trim();
-      if (href.isEmpty) continue;
-      final url = _normalizeUrl(href);
-      // Varsa yakın img tag'inden logo URL'sini çek
-      final img = a.querySelector('img') ?? a.parent?.querySelector('img');
-      final logoUrl = img != null
-          ? _normalizeUrl(img.attributes['src'] ?? '')
-          : null;
-      final key = '${name.toLowerCase()}|$url';
-      if (seen.contains(key)) continue;
-      seen.add(key);
-      clubs.add(
-        KluClub(
-          name: name,
-          url: url,
-          logoUrl: logoUrl?.isNotEmpty == true ? logoUrl : null,
-        ),
-      );
-    }
-
-    if (clubs.isNotEmpty) return clubs;
-
-    // Fallback: link bulunamazsa başlıklardan isim çıkar.
-    for (final el in doc.querySelectorAll('h3')) {
-      final t = el.text.trim();
-      if (t.isEmpty) continue;
-      final low = t.toLowerCase();
-      if (!(low.contains('kulüp') || low.contains('kulub'))) continue;
-      if (seen.contains(t.toLowerCase())) continue;
-      seen.add(t.toLowerCase());
-      clubs.add(KluClub(name: t, url: _sourceUrl));
-    }
-    return clubs;
-  }
-
-  String _normalizeUrl(String raw) {
-    if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-    if (raw.startsWith('/')) return 'https://ogrkulup.klu.edu.tr$raw';
-    return 'https://ogrkulup.klu.edu.tr/$raw';
   }
 
   List<KluClub> _extractClubsFromJina(String content) {

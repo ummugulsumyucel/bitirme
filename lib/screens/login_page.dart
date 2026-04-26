@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'register_page.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_navigation.dart';
@@ -18,6 +19,41 @@ class _LoginPageState extends State<LoginPage> {
   bool _rememberMe = false;
   bool _loggingIn = false;
   bool _sendingReset = false;
+
+  static const _kRememberMe = 'remember_me';
+  static const _kSavedEmail = 'saved_email';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final remember = prefs.getBool(_kRememberMe) ?? false;
+    if (remember) {
+      final email = prefs.getString(_kSavedEmail) ?? '';
+      if (mounted) {
+        setState(() {
+          _rememberMe = true;
+          _emailController.text = email;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveCredentials(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kRememberMe, true);
+    await prefs.setString(_kSavedEmail, email);
+  }
+
+  Future<void> _clearCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kRememberMe);
+    await prefs.remove(_kSavedEmail);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +119,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              _firebaseAuthCaption(),
               const SizedBox(height: 28),
               _buildEmailField(),
               const SizedBox(height: 16),
@@ -162,7 +197,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _firebaseAuthCaption(),
                         const SizedBox(height: 36),
                         _buildEmailField(),
                         const SizedBox(height: 20),
@@ -220,6 +254,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 20),
                     Text(
                       'BAĞLAN, PAYLAŞ, KEŞFET!',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
@@ -378,18 +413,24 @@ class _LoginPageState extends State<LoginPage> {
             : () async {
                 if (_formKey.currentState!.validate()) {
                   setState(() => _loggingIn = true);
+                  final email = _emailController.text.trim();
                   final err = await AuthService().login(
-                    _emailController.text.trim(),
+                    email,
                     _passwordController.text,
                   );
                   if (!mounted) return;
                   setState(() => _loggingIn = false);
                   if (err == null) {
+                    if (_rememberMe) {
+                      await _saveCredentials(email);
+                    } else {
+                      await _clearCredentials();
+                    }
                     finishLoginOrRegisterFlow(context);
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(err)),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(err)));
                   }
                 }
               },
@@ -414,15 +455,21 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _onForgotPassword() async {
-    final email = _emailController.text.trim();
+    // Önce e-posta alanındaki değeri al
+    String email = _emailController.text.trim();
+
+    // E-posta boşsa dialog aç
     if (email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Şifre sıfırlama için önce geçerli e-posta adresinizi yazın.'),
         ),
       );
-      return;
+      if (result == null || result.isEmpty || !result.contains('@')) return;
+      email = result;
     }
+
+    if (!mounted) return;
     setState(() => _sendingReset = true);
     final err = await AuthService().sendPasswordResetEmail(email);
     if (!mounted) return;
