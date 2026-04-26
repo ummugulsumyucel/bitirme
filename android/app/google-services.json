@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1014789487407",
+    "project_id": "bitirme-a6f96",
+    "storage_bucket": "bitirme-a6f96.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1014789487407:android:fb79237b6f0c43ce24bfda",
+        "android_client_info": {
+          "package_name": "com.company.bitirme"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAU4YclNtClGTsb0iDx_uVxs67jAQ2fZJs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1014789487407:android:b3bcbafd82da898424bfda",
+        "android_client_info": {
+          "package_name": "com.example.bitirme"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAU4YclNtClGTsb0iDx_uVxs67jAQ2fZJs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
