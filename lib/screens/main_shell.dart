@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../navigation/shell_tab_sync.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../theme/uni_theme.dart';
+import '../widgets/notification_widget.dart';
 import 'announcements_page.dart';
 import 'calendar_page.dart';
 import 'events_screen.dart';
@@ -33,6 +36,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _index = 0;
+  final NotificationService _notificationService = NotificationService();
 
   late final void Function(int) _shellTabHandler;
 
@@ -43,6 +47,26 @@ class _MainShellState extends State<MainShell> {
       if (mounted) setState(() => _index = i);
     };
     ShellTabSync.register(_shellTabHandler);
+
+    // Initialize notification service
+    _initializeNotifications();
+  }
+
+  Future<void> _initializeNotifications() async {
+    await _notificationService.initialize();
+    // Check for new notifications periodically
+    _startNotificationTimer();
+  }
+
+  void _startNotificationTimer() {
+    // Check for new notifications every 30 seconds
+    Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        _notificationService.checkForNewNotifications();
+      } else {
+        timer.cancel();
+      }
+    });
   }
 
   @override
@@ -100,6 +124,28 @@ class _MainShellState extends State<MainShell> {
           onPressed: _openDrawer,
         ),
         actions: [
+          NotificationBadge(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const NotificationPanel(),
+              );
+            },
+            child: IconButton(
+              tooltip: 'Bildirimler',
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const NotificationPanel(),
+                );
+              },
+            ),
+          ),
           IconButton(
             tooltip: _isDark ? 'Açık tema' : 'Koyu tema',
             icon: Icon(

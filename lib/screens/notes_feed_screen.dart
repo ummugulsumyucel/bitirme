@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../widgets/common_drawer.dart';
 import 'calendar_page.dart';
 import 'events_screen.dart';
 import 'login_page.dart';
@@ -30,15 +31,13 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
   String _semesterFilter = 'Tümü';
   String _categoryFilter = 'Tümü';
   String _searchQuery = '';
-  bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
 
   static const _categoryTabs = <String>[
     'Tümü',
-    'Metin',
-    'Sosyal Güvenlik',
-    'Matematik',
-    'İktisat',
+    'Ders Notu',
+    'Soru Çözümü',
+    'Özet / Slayt',
     'Diğer',
   ];
 
@@ -115,6 +114,8 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
             _buildSearchBar(),
             const SizedBox(height: 16),
             _buildTopFilters(),
+            const SizedBox(height: 10),
+            _buildCategoryTabs(),
             const SizedBox(height: 16),
             _buildNotesList(context),
             const SizedBox(height: 24),
@@ -132,7 +133,11 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
 
     return Scaffold(
       backgroundColor: scheme.surface,
-      drawer: _buildDrawer(context),
+      drawer: CommonDrawer(
+        onToggleTheme: widget.onToggleTheme,
+        isDarkMode: widget.isDarkMode,
+        selectedPage: 'notes',
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -291,45 +296,44 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
     final department = ((data['department'] as String?) ?? '').toLowerCase();
 
     switch (_categoryFilter) {
-      case 'Metin':
+      case 'Ders Notu':
         return blob.contains('metin') ||
-            blob.contains('özet') ||
+            blob.contains('ders not') ||
+            blob.contains('konu anlatım') ||
+            blob.contains('yazılı') ||
+            blob.contains('text');
+      case 'Soru Çözümü':
+        return blob.contains('soru') ||
+            blob.contains('çözüm') ||
+            blob.contains('cozum') ||
+            blob.contains('problem') ||
+            blob.contains('alıştırma') ||
+            blob.contains('alistirma') ||
+            blob.contains('exercise');
+      case 'Özet / Slayt':
+        return blob.contains('özet') ||
             blob.contains('ozet') ||
             blob.contains('slayt') ||
-            blob.contains('ders not') ||
-            blob.contains('konu anlatım');
-      case 'Sosyal Güvenlik':
-        return (blob.contains('sosyal') && blob.contains('güvenlik')) ||
-            (blob.contains('sosyal') && blob.contains('guvenlik')) ||
-            course.contains('sosyal güvenlik') ||
-            course.contains('sosyal guvenlik') ||
-            department.contains('sosyal güvenlik') ||
-            department.contains('sosyal guvenlik');
-      case 'Matematik':
-        return blob.contains('matematik') ||
-            blob.contains('mat') ||
-            course.contains('matematik') ||
-            course.contains('mat');
-      case 'İktisat':
-        return blob.contains('iktisat') ||
-            blob.contains('ekonomi') ||
-            course.contains('iktisat') ||
-            course.contains('ekonomi');
+            blob.contains('slide') ||
+            blob.contains('sunum') ||
+            blob.contains('presentation') ||
+            blob.contains('summary');
       case 'Diğer':
         // Diğer kategoriler için false dönenler hariç tümü
-        final isMath =
-            blob.contains('matematik') || course.contains('matematik');
-        final isEcon =
-            blob.contains('iktisat') ||
-            blob.contains('ekonomi') ||
-            course.contains('iktisat') ||
-            course.contains('ekonomi');
-        final isSocial =
-            (blob.contains('sosyal') &&
-                (blob.contains('güvenlik') || blob.contains('guvenlik'))) ||
-            course.contains('sosyal güvenlik') ||
-            course.contains('sosyal guvenlik');
-        return !isMath && !isEcon && !isSocial;
+        final isDersNotu =
+            blob.contains('metin') ||
+            blob.contains('ders not') ||
+            blob.contains('konu anlatım');
+        final isSoru =
+            blob.contains('soru') ||
+            blob.contains('çözüm') ||
+            blob.contains('cozum') ||
+            blob.contains('problem');
+        final isOzet =
+            blob.contains('özet') ||
+            blob.contains('ozet') ||
+            blob.contains('slayt');
+        return !isDersNotu && !isSoru && !isOzet;
       default:
         return true;
     }
@@ -372,7 +376,9 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
 
         docs = docs.where((d) {
           final data = d.data();
-          return _matchesSemesterFilter(data) && _matchesSearchQuery(data);
+          return _matchesSemesterFilter(data) &&
+              _matchesCategoryTab(data) &&
+              _matchesSearchQuery(data);
         }).toList();
 
         if (docs.isEmpty) {
@@ -788,276 +794,6 @@ class _NotesFeedScreenState extends State<NotesFeedScreen> {
             onPressed: widget.onToggleTheme ?? () {},
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context) {
-    final authService = AuthService();
-    final isLoggedIn = authService.isLoggedIn;
-
-    final scheme = Theme.of(context).colorScheme;
-
-    return Drawer(
-      child: Builder(
-        builder: (drawerContext) {
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-            children: [
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      scheme.primary,
-                      Color.lerp(
-                        scheme.primary,
-                        const Color(0xFF0F1729),
-                        0.35,
-                      )!,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: scheme.primary.withValues(alpha: 0.35),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: scheme.onPrimary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        Icons.school_rounded,
-                        color: scheme.onPrimary,
-                        size: 36,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'UniConnect',
-                      style: TextStyle(
-                        color: scheme.onPrimary,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Kampüs hayatı tek uygulamada',
-                      style: TextStyle(
-                        color: scheme.onPrimary.withValues(alpha: 0.85),
-                        fontSize: 13,
-                      ),
-                    ),
-                    if (isLoggedIn) ...[
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.person_rounded,
-                            size: 18,
-                            color: scheme.onPrimary.withValues(alpha: 0.9),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              authService.currentUserName ?? 'Kullanıcı',
-                              style: TextStyle(
-                                color: scheme.onPrimary.withValues(alpha: 0.95),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.only(left: 8, bottom: 6),
-                child: Text(
-                  'MENÜ',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.home_outlined),
-                title: const Text('Ana Sayfa'),
-                selected: false,
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.calendar_month_outlined),
-                title: const Text('Takvim'),
-                selected: false,
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CalendarPage(),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.person_outline),
-                title: const Text('Profilim'),
-                selected: false,
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProfileScreen(
-                        embeddedInShell: false,
-                        onToggleTheme: widget.onToggleTheme,
-                        isDarkMode: widget.isDarkMode,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const Divider(height: 32),
-              ListTile(
-                leading: const Icon(Icons.event_outlined),
-                title: const Text('Etkinlikler'),
-                selected: false,
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EventsScreen(
-                        embeddedInShell: false,
-                        onToggleTheme: widget.onToggleTheme,
-                        isDarkMode: widget.isDarkMode,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.campaign_outlined),
-                title: const Text('İlanlar'),
-                selected: false,
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.menu_book_outlined),
-                title: const Text('Notlar'),
-                selected: true,
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                },
-              ),
-              const Divider(height: 32),
-              ListTile(
-                leading: const Icon(Icons.restaurant_menu),
-                title: const Text('Yemek Menüsü'),
-                selected: false,
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.feedback_outlined),
-                title: const Text('Öneri / Şikayet'),
-                selected: false,
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.pop(context);
-                },
-              ),
-              const Divider(),
-              if (!isLoggedIn) ...[
-                ListTile(
-                  leading: const Icon(Icons.login),
-                  title: const Text('Giriş Yap'),
-                  onTap: () {
-                    Navigator.pop(drawerContext);
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginPage(),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.person_add),
-                  title: const Text('Kayıt Ol'),
-                  onTap: () {
-                    Navigator.pop(drawerContext);
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RegisterPage(),
-                      ),
-                    );
-                  },
-                ),
-              ] else ...[
-                ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: const Text('Çıkış Yap'),
-                  onTap: () async {
-                    Navigator.pop(drawerContext);
-                    await authService.logout();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Başarıyla çıkış yapıldı'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ],
-              const Divider(),
-              ListTile(
-                leading: Icon(
-                  widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                ),
-                title: Text(widget.isDarkMode ? 'Açık Mod' : 'Koyu Mod'),
-                onTap: () {
-                  if (widget.onToggleTheme != null) {
-                    widget.onToggleTheme!();
-                  }
-                  Navigator.pop(drawerContext);
-                },
-              ),
-            ],
-          );
-        },
       ),
     );
   }

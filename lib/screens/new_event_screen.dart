@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 
 import '../services/auth_service.dart';
+import '../widgets/common_drawer.dart';
 import '../services/note_upload.dart';
 import 'calendar_page.dart';
 import 'login_page.dart';
@@ -51,7 +52,11 @@ class _NewEventScreenState extends State<NewEventScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      drawer: _buildDrawer(context),
+      drawer: CommonDrawer(
+        onToggleTheme: widget.onToggleTheme,
+        isDarkMode: widget.isDarkMode,
+        selectedPage: 'events',
+      ),
       body: SafeArea(
         child: Column(
           children: [

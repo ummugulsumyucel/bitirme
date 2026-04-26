@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
-
 import '../services/auth_service.dart';
 import '../screens/announcements_page.dart';
 import '../screens/calendar_page.dart';
+import '../screens/events_screen.dart';
 import '../screens/login_page.dart';
-import '../screens/main_shell.dart';
-import '../screens/notes_feed_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/register_page.dart';
-import '../screens/suggestion_complaint_screen.dart';
-import '../screens/events_screen.dart';
-import '../screens/food_menu_screen.dart';
 
 class CommonDrawer extends StatelessWidget {
   final VoidCallback? onToggleTheme;
   final bool isDarkMode;
+  final String? selectedPage; // Hangi sayfa seçili olacak
 
-  const CommonDrawer({super.key, this.onToggleTheme, this.isDarkMode = false});
+  const CommonDrawer({
+    super.key,
+    this.onToggleTheme,
+    this.isDarkMode = false,
+    this.selectedPage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +31,6 @@ class CommonDrawer extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
             children: [
-              // Modern gradient header
               Container(
                 padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
                 decoration: BoxDecoration(
@@ -69,6 +69,13 @@ class CommonDrawer extends StatelessWidget {
                       child: Image.asset(
                         'assets/images/logo1.png',
                         fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.school_rounded,
+                            color: scheme.primary,
+                            size: 36,
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -115,7 +122,6 @@ class CommonDrawer extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.only(left: 8, bottom: 6),
@@ -129,210 +135,81 @@ class CommonDrawer extends StatelessWidget {
                   ),
                 ),
               ),
-
-              _tile(
-                context: drawerContext,
-                icon: Icons.home_outlined,
-                label: 'Ana Sayfa',
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => MainShell(
-                        themeMode: isDarkMode
-                            ? ThemeMode.dark
-                            : ThemeMode.light,
-                        onToggleTheme: onToggleTheme ?? () {},
-                      ),
-                    ),
-                    (route) => false,
-                  );
-                },
+              ListTile(
+                leading: const Icon(Icons.home_outlined),
+                title: const Text('Ana Sayfa'),
+                selected: selectedPage == 'home',
+                onTap: () => _navigateToHome(drawerContext),
               ),
-              _tile(
-                context: drawerContext,
-                icon: Icons.event_outlined,
-                label: 'Etkinlikler',
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => EventsScreen(
-                        embeddedInShell: false,
-                        onToggleTheme: onToggleTheme,
-                        isDarkMode: isDarkMode,
-                      ),
-                    ),
-                  );
-                },
+              ListTile(
+                leading: const Icon(Icons.calendar_month_outlined),
+                title: const Text('Takvim'),
+                selected: selectedPage == 'calendar',
+                onTap: () => _navigateToCalendar(drawerContext),
               ),
-              _tile(
-                context: drawerContext,
-                icon: Icons.calendar_month_outlined,
-                label: 'Takvim',
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CalendarPage(
-                        embeddedInShell: false,
-                        onToggleTheme: onToggleTheme,
-                        isDarkMode: isDarkMode,
-                      ),
-                    ),
-                  );
-                },
+              ListTile(
+                leading: const Icon(Icons.person_outline),
+                title: const Text('Profilim'),
+                selected: selectedPage == 'profile',
+                onTap: () => _navigateToProfile(drawerContext, isLoggedIn),
               ),
-              _tile(
-                context: drawerContext,
-                icon: Icons.person_outline,
-                label: 'Profilim',
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  if (!isLoggedIn) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                    );
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ProfileScreen(
-                          embeddedInShell: false,
-                          onToggleTheme: onToggleTheme,
-                          isDarkMode: isDarkMode,
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-
               const Divider(height: 32),
-
-              _tile(
-                context: drawerContext,
-                icon: Icons.campaign_outlined,
-                label: 'İlanlar',
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AnnouncementsPage(
-                        onToggleDarkMode: onToggleTheme ?? () {},
-                        isDarkMode: isDarkMode,
-                      ),
-                    ),
-                  );
-                },
+              ListTile(
+                leading: const Icon(Icons.event_outlined),
+                title: const Text('Etkinlikler'),
+                selected: selectedPage == 'events',
+                onTap: () => _navigateToEvents(drawerContext),
               ),
-              _tile(
-                context: drawerContext,
-                icon: Icons.menu_book_outlined,
-                label: 'Notlar',
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const NotesFeedScreen(embeddedInShell: false),
-                    ),
-                  );
-                },
+              ListTile(
+                leading: const Icon(Icons.campaign_outlined),
+                title: const Text('İlanlar'),
+                selected: selectedPage == 'announcements',
+                onTap: () => _navigateToAnnouncements(drawerContext),
               ),
-              _tile(
-                context: drawerContext,
-                icon: Icons.restaurant_menu,
-                label: 'Yemek Menüsü',
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const FoodMenuScreen(embeddedInShell: false),
-                    ),
-                  );
-                },
+              ListTile(
+                leading: const Icon(Icons.menu_book_outlined),
+                title: const Text('Notlar'),
+                selected: selectedPage == 'notes',
+                onTap: () => _navigateToNotes(drawerContext),
               ),
-              _tile(
-                context: drawerContext,
-                icon: Icons.feedback_outlined,
-                label: 'Öneri / Şikayet',
-                onTap: () {
-                  Navigator.pop(drawerContext);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SuggestionComplaintScreen(
-                        embeddedInShell: false,
-                      ),
-                    ),
-                  );
-                },
+              const Divider(height: 32),
+              ListTile(
+                leading: const Icon(Icons.restaurant_menu),
+                title: const Text('Yemek Menüsü'),
+                selected: selectedPage == 'food',
+                onTap: () => _navigateToHome(drawerContext),
               ),
-
+              ListTile(
+                leading: const Icon(Icons.feedback_outlined),
+                title: const Text('Öneri / Şikayet'),
+                selected: selectedPage == 'feedback',
+                onTap: () => _navigateToHome(drawerContext),
+              ),
               const Divider(),
-
               if (!isLoggedIn) ...[
-                _tile(
-                  context: drawerContext,
-                  icon: Icons.login,
-                  label: 'Giriş Yap',
-                  onTap: () {
-                    Navigator.pop(drawerContext);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                    );
-                  },
+                ListTile(
+                  leading: const Icon(Icons.login),
+                  title: const Text('Giriş Yap'),
+                  onTap: () => _navigateToLogin(drawerContext),
                 ),
-                _tile(
-                  context: drawerContext,
-                  icon: Icons.person_add,
-                  label: 'Kayıt Ol',
-                  onTap: () {
-                    Navigator.pop(drawerContext);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const RegisterPage()),
-                    );
-                  },
+                ListTile(
+                  leading: const Icon(Icons.person_add),
+                  title: const Text('Kayıt Ol'),
+                  onTap: () => _navigateToRegister(drawerContext),
                 ),
               ] else ...[
-                _tile(
-                  context: drawerContext,
-                  icon: Icons.logout,
-                  label: 'Çıkış Yap',
-                  onTap: () async {
-                    Navigator.pop(drawerContext);
-                    await authService.logout();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Başarıyla çıkış yapıldı'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
+                ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: const Text('Çıkış Yap'),
+                  onTap: () => _logout(drawerContext, authService),
                 ),
               ],
-
               const Divider(),
-
-              _tile(
-                context: drawerContext,
-                icon: isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                label: isDarkMode ? 'Açık Mod' : 'Koyu Mod',
+              ListTile(
+                leading: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
+                title: Text(isDarkMode ? 'Açık Mod' : 'Koyu Mod'),
                 onTap: () {
-                  if (onToggleTheme != null) onToggleTheme!();
+                  onToggleTheme?.call();
                   Navigator.pop(drawerContext);
                 },
               ),
@@ -343,25 +220,103 @@ class CommonDrawer extends StatelessWidget {
     );
   }
 
-  Widget _tile({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    final scheme = Theme.of(context).colorScheme;
-    return ListTile(
-      leading: Icon(icon, color: scheme.onSurfaceVariant),
-      title: Text(
-        label,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: scheme.onSurface,
+  void _navigateToHome(BuildContext drawerContext) {
+    Navigator.pop(drawerContext);
+    // Ana sayfaya git - context'e göre farklı navigation yapılabilir
+    Navigator.popUntil(drawerContext, (route) => route.isFirst);
+  }
+
+  void _navigateToCalendar(BuildContext drawerContext) {
+    Navigator.pop(drawerContext);
+    Navigator.pushReplacement(
+      drawerContext,
+      MaterialPageRoute(builder: (context) => const CalendarPage()),
+    );
+  }
+
+  void _navigateToProfile(BuildContext drawerContext, bool isLoggedIn) {
+    Navigator.pop(drawerContext);
+    if (!isLoggedIn) {
+      Navigator.pushReplacement(
+        drawerContext,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        drawerContext,
+        MaterialPageRoute(
+          builder: (context) => ProfileScreen(
+            embeddedInShell: false,
+            onToggleTheme: onToggleTheme,
+            isDarkMode: isDarkMode,
+          ),
+        ),
+      );
+    }
+  }
+
+  void _navigateToEvents(BuildContext drawerContext) {
+    Navigator.pop(drawerContext);
+    Navigator.pushReplacement(
+      drawerContext,
+      MaterialPageRoute(
+        builder: (context) => EventsScreen(
+          embeddedInShell: false,
+          onToggleTheme: onToggleTheme,
+          isDarkMode: isDarkMode,
         ),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      onTap: onTap,
     );
+  }
+
+  void _navigateToAnnouncements(BuildContext drawerContext) {
+    Navigator.pop(drawerContext);
+    Navigator.pushReplacement(
+      drawerContext,
+      MaterialPageRoute(
+        builder: (context) => AnnouncementsPage(
+          onToggleDarkMode: onToggleTheme ?? () {},
+          isDarkMode: isDarkMode,
+        ),
+      ),
+    );
+  }
+
+  void _navigateToNotes(BuildContext drawerContext) {
+    Navigator.pop(drawerContext);
+    // Notlar sayfasına git - genellikle ana sayfaya dönüp notlar sekmesine geçer
+    Navigator.popUntil(drawerContext, (route) => route.isFirst);
+  }
+
+  void _navigateToLogin(BuildContext drawerContext) {
+    Navigator.pop(drawerContext);
+    Navigator.pushReplacement(
+      drawerContext,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+  }
+
+  void _navigateToRegister(BuildContext drawerContext) {
+    Navigator.pop(drawerContext);
+    Navigator.pushReplacement(
+      drawerContext,
+      MaterialPageRoute(builder: (context) => const RegisterPage()),
+    );
+  }
+
+  Future<void> _logout(
+    BuildContext drawerContext,
+    AuthService authService,
+  ) async {
+    Navigator.pop(drawerContext);
+    await authService.logout();
+    if (drawerContext.mounted) {
+      ScaffoldMessenger.of(drawerContext).showSnackBar(
+        const SnackBar(
+          content: Text('Başarıyla çıkış yapıldı'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 }

@@ -39,12 +39,13 @@ class AuthService {
     final user = _auth.currentUser;
     if (user != null) {
       await SessionService.setUserDocId(user.uid);
-      // Firestore sync'i arka planda yap, initialize'ı bloklamasın
-      _syncUserProfileFromFirestore(user).catchError((e) {
+      // Rol dahil profili senkronize et
+      await _syncUserProfileFromFirestore(user).catchError((e) {
         debugPrint('AuthService.initialize sync (non-fatal): $e');
       });
     } else {
       _cachedDisplayName = null;
+      _cachedRole = null;
       await SessionService.clearUserDocId();
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('userEmail');
