@@ -414,7 +414,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   _filterAnnouncements();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5A7FCF),
+                  backgroundColor: scheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -437,7 +437,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   style: TextStyle(color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5A7FCF),
+                  backgroundColor: scheme.primary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -458,7 +458,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   style: TextStyle(color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5A7FCF),
+                  backgroundColor: scheme.primary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -469,6 +469,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   }
 
   Widget _buildAnnouncementCard(Announcement announcement) {
+    final scheme = Theme.of(context).colorScheme;
     final dateFormat = DateFormat('d MMMM yyyy', 'tr_TR');
     final hasImage =
         announcement.imageUrl != null && announcement.imageUrl!.isNotEmpty;
@@ -530,99 +531,71 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  announcement.title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                  announcement.author,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: announcement.iconColor,
                   ),
                 ),
-                if (announcement.description != null &&
-                    announcement.description!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    announcement.description!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on,
-                      size: 14,
-                      color: Color(0xFF9CA3AF),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        announcement.location,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6B7280),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.calendar_today,
-                      size: 14,
-                      color: Color(0xFF9CA3AF),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      dateFormat.format(announcement.date),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () => _showDetails(announcement),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF5A7FCF)),
-                      foregroundColor: const Color(0xFF5A7FCF),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Detayları Gör'),
-                  ),
+                const Spacer(),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              announcement.title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: scheme.onSurface, // Tema rengini kullan
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.category, size: 16, color: scheme.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Text(
+                  announcement.category,
+                  style: TextStyle(color: scheme.onSurface),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImageBanner(String imageUrl) {
-    // base64 data URL
-    if (imageUrl.startsWith('data:image/')) {
-      try {
-        final commaIndex = imageUrl.indexOf(',');
-        if (commaIndex != -1) {
-          final base64Data = imageUrl.substring(commaIndex + 1);
-          final bytes = base64Decode(base64Data);
-          return SizedBox(
-            height: 180,
-            width: double.infinity,
-            child: Image.memory(
-              bytes,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  _buildNoImageBanner(const Color(0xFF5A7FCF)),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.location_on, size: 16, color: scheme.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Text(
+                  announcement.location,
+                  style: TextStyle(color: scheme.onSurface),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.calendar_today, size: 16, color: scheme.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Text(
+                  dateFormat.format(announcement.date),
+                  style: TextStyle(color: scheme.onSurface),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  _showDetails(announcement);
+                },
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: scheme.primary), // Tema rengini kullan
+                  foregroundColor: scheme.primary, // Tema rengini kullan
+                ),
+                child: const Text('Detayları Gör'),
+              ),
             ),
           );
         }

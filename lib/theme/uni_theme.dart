@@ -17,27 +17,32 @@ ThemeData uniTheme(Brightness brightness) {
   );
 
   final scheme = base.copyWith(
-    surface: isDark ? const Color(0xFF111827) : const Color(0xFFF7F9FD),
-    onSurface: isDark ? const Color(0xFFF3F6FD) : const Color(0xFF111827),
-    onSurfaceVariant: isDark
-        ? const Color(0xFFCDD6EA)
-        : const Color(0xFF4B5563),
+    // Açık tema - eski renkler korundu
     surfaceContainerLowest: brightness == Brightness.light
         ? const Color(0xFFF0F4FC)
-        : const Color(0xFF182133),
+        : const Color(0xFF2A3142), // Koyu tema - orta gri-mavi
     surfaceContainerLow: brightness == Brightness.light
         ? const Color(0xFFE8EEF8)
-        : const Color(0xFF212C41),
+        : const Color(0xFF323B52), // Kartlar - arka plandan biraz açık
     surfaceContainer: brightness == Brightness.light
         ? const Color(0xFFE2EAF5)
-        : const Color(0xFF2A3650),
-    outlineVariant: isDark ? const Color(0xFF45516B) : base.outlineVariant,
+        : const Color(0xFF3A4460), // Container - daha belirgin
+    surface: brightness == Brightness.light
+        ? Colors.white
+        : const Color(0xFF1E2538), // Ana arka plan - koyu gri-mavi (siyah değil)
+    // Koyu temada metin kontrastını artır
+    onSurface: brightness == Brightness.light
+        ? Colors.black87
+        : const Color(0xFFECEFF8), // Koyu temada neredeyse beyaz
+    onSurfaceVariant: brightness == Brightness.light
+        ? Colors.black54
+        : const Color(0xFFB8C2D8), // Koyu temada açık gri-mavi
   );
 
   final titleStyle = TextStyle(
     fontFamily: 'Roboto',
     fontWeight: FontWeight.w600,
-    color: scheme.onPrimary,
+    color: Colors.white, // Her iki temada da beyaz
     fontSize: 20,
   );
 
@@ -54,17 +59,21 @@ ThemeData uniTheme(Brightness brightness) {
       elevation: 0,
       scrolledUnderElevation: 2,
       centerTitle: false,
-      backgroundColor: scheme.primary,
-      foregroundColor: scheme.onPrimary,
+      backgroundColor: brightness == Brightness.light
+          ? scheme.primary
+          : const Color(0xFF263354),
+      foregroundColor: Colors.white, // Her iki temada da beyaz
       surfaceTintColor: Colors.transparent,
       titleTextStyle: titleStyle,
-      iconTheme: IconThemeData(color: scheme.onPrimary),
+      iconTheme: const IconThemeData(color: Colors.white), // Her iki temada da beyaz
     ),
     cardTheme: CardThemeData(
-      elevation: 0,
+      elevation: brightness == Brightness.light ? 0 : 2,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: scheme.surfaceContainerLow,
+      color: brightness == Brightness.light
+          ? scheme.surfaceContainerLow
+          : const Color(0xFF323B52), // Koyu temada kartlar belirgin
     ),
     iconTheme: IconThemeData(color: scheme.onSurfaceVariant),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -72,7 +81,9 @@ ThemeData uniTheme(Brightness brightness) {
       foregroundColor: Colors.white,
     ),
     drawerTheme: DrawerThemeData(
-      backgroundColor: scheme.surface,
+      backgroundColor: brightness == Brightness.light
+          ? scheme.surface
+          : const Color(0xFF232C42), // Koyu temada drawer yumuşak
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.horizontal(right: Radius.circular(20)),
       ),
@@ -82,9 +93,17 @@ ThemeData uniTheme(Brightness brightness) {
       selectedColor: scheme.primary,
       selectedTileColor: scheme.primaryContainer.withValues(alpha: 0.35),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      // Koyu temada metin rengini belirgin yap
+      textColor: scheme.onSurface,
+      titleTextStyle: TextStyle(
+        color: scheme.onSurface,
+        fontWeight: FontWeight.w500,
+      ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: scheme.surface,
+      backgroundColor: brightness == Brightness.light
+          ? scheme.surface
+          : const Color(0xFF263050), // Koyu temada nav bar yumuşak mavi-gri
       indicatorColor: scheme.primaryContainer.withValues(alpha: 0.6),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
@@ -114,7 +133,7 @@ ThemeData uniTheme(Brightness brightness) {
       style: ElevatedButton.styleFrom(
         backgroundColor: UniBrand.accent,
         foregroundColor: Colors.white,
-        elevation: 0,
+        elevation: brightness == Brightness.light ? 0 : 4, // Koyu temada daha belirgin
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -122,7 +141,11 @@ ThemeData uniTheme(Brightness brightness) {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: scheme.primary,
-        side: BorderSide(color: scheme.primary.withValues(alpha: 0.5)),
+        side: BorderSide(
+          color: brightness == Brightness.light 
+            ? scheme.primary.withValues(alpha: 0.5)
+            : scheme.primary.withValues(alpha: 0.8), // Koyu temada daha belirgin border
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     ),
@@ -132,23 +155,47 @@ ThemeData uniTheme(Brightness brightness) {
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: scheme.outlineVariant),
+        borderSide: BorderSide(
+          color: brightness == Brightness.light 
+            ? scheme.outlineVariant
+            : scheme.outlineVariant.withValues(alpha: 0.8), // Koyu temada daha belirgin
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: scheme.primary, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      // Koyu temada metin rengini belirgin yap
+      labelStyle: TextStyle(color: scheme.onSurfaceVariant),
+      hintStyle: TextStyle(color: scheme.onSurfaceVariant.withValues(alpha: 0.7)),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
+      backgroundColor: brightness == Brightness.light 
+        ? const Color(0xFF1E3A8A)
+        : const Color(0xFF3B4252),
+      contentTextStyle: const TextStyle(color: Colors.white),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       backgroundColor: scheme.inverseSurface,
       contentTextStyle: TextStyle(color: scheme.onInverseSurface),
     ),
     dividerTheme: DividerThemeData(
-      color: scheme.outlineVariant.withValues(alpha: 0.6),
+      color: scheme.outlineVariant.withValues(
+        alpha: brightness == Brightness.light ? 0.6 : 0.4
+      ),
       space: 1,
     ),
+    // Koyu temada text theme'i güçlendir
+    textTheme: brightness == Brightness.light 
+      ? null 
+      : TextTheme(
+          bodyLarge: TextStyle(color: scheme.onSurface),
+          bodyMedium: TextStyle(color: scheme.onSurface),
+          bodySmall: TextStyle(color: scheme.onSurfaceVariant),
+          titleLarge: TextStyle(color: scheme.onSurface, fontWeight: FontWeight.bold),
+          titleMedium: TextStyle(color: scheme.onSurface, fontWeight: FontWeight.w600),
+          titleSmall: TextStyle(color: scheme.onSurface, fontWeight: FontWeight.w500),
+        ),
   );
 }

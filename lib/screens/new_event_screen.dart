@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 
 import '../services/auth_service.dart';
@@ -14,11 +15,15 @@ import 'register_page.dart';
 class NewEventScreen extends StatefulWidget {
   final VoidCallback? onToggleTheme;
   final bool isDarkMode;
+  final String? editEventId;           // Düzenleme modunda etkinlik ID'si
+  final Map<String, dynamic>? initialData; // Düzenleme modunda mevcut veriler
 
   const NewEventScreen({
     super.key,
     this.onToggleTheme,
     this.isDarkMode = false,
+    this.editEventId,
+    this.initialData,
   });
 
   @override
@@ -38,25 +43,30 @@ class _NewEventScreenState extends State<NewEventScreen> {
   PlatformFile? _pickedFile;
   bool _isPickingFile = false;
 
+  bool get _isEditMode => widget.editEventId != null;
+
   @override
-  void dispose() {
-    _titleController.dispose();
-    _placeController.dispose();
-    _descriptionController.dispose();
-    _dateController.dispose();
-    _timeController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    // Düzenleme modunda mevcut verileri doldur
+    if (_isEditMode && widget.initialData != null) {
+      final d = widget.initialData!;
+      _titleController.text = (d['title'] as String?)?.trim() ?? '';
+      _placeController.text = (d['place'] as String?)?.trim() ?? '';
+      _descriptionController.text = (d['description'] as String?)?.trim() ?? '';
+      _dateController.text = (d['date'] as String?)?.trim() ?? '';
+      _timeController.text = (d['time'] as String?)?.trim() ?? '';
+      _selectedCategory = (d['category'] as String?)?.trim() ?? 'Seminer';
+      _selectedLabel = (d['label'] as String?)?.trim() ?? 'Ücretsiz';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      drawer: CommonDrawer(
-        onToggleTheme: widget.onToggleTheme,
-        isDarkMode: widget.isDarkMode,
-        selectedPage: 'events',
-      ),
+      backgroundColor: scheme.surface,
+      drawer: _buildDrawer(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -67,26 +77,28 @@ class _NewEventScreenState extends State<NewEventScreen> {
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: scheme.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Yeni Etkinlik Oluştur',
+                      Text(
+                        _isEditMode ? 'Etkinliği Düzenle' : 'Yeni Etkinlik Oluştur',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E3A8A),
+                          color: scheme.primary,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Kampüste düzenlenecek etkinlikleri paylaşarak diğer öğrencilerin katılımını sağla.',
+                      Text(
+                        _isEditMode
+                            ? 'Etkinlik bilgilerini güncelleyin.'
+                            : 'Kampüste düzenlenecek etkinlikleri paylaşarak diğer öğrencilerin katılımını sağla.',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF666666),
+                          color: scheme.onSurfaceVariant,
                           height: 1.5,
                         ),
                       ),
@@ -204,7 +216,7 @@ class _NewEventScreenState extends State<NewEventScreen> {
                         width: double.infinity,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5A7FCF),
+                            backgroundColor: scheme.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -214,8 +226,8 @@ class _NewEventScreenState extends State<NewEventScreen> {
                           onPressed: _isSubmitting ? null : _submitEvent,
                           child: Text(
                             _isSubmitting
-                                ? 'Yayınlanıyor...'
-                                : 'Etkinliği Yayınla',
+                                ? (_isEditMode ? 'Güncelleniyor...' : 'Yayınlanıyor...')
+                                : (_isEditMode ? 'Güncelle' : 'Etkinliği Yayınla'),
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 15,
@@ -236,9 +248,10 @@ class _NewEventScreenState extends State<NewEventScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       height: 60,
-      color: const Color(0xFF1E3A8A),
+      color: scheme.primary,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -278,6 +291,7 @@ class _NewEventScreenState extends State<NewEventScreen> {
   }
 
   Widget _buildCategoryDropdown() {
+    final scheme = Theme.of(context).colorScheme;
     final categories = <String>[
       'Seminer',
       'Atölye',
@@ -291,24 +305,25 @@ class _NewEventScreenState extends State<NewEventScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainer,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _selectedCategory,
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          dropdownColor: scheme.surfaceContainerLow,
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: scheme.onSurface),
           items: categories
               .map(
                 (e) => DropdownMenuItem<String>(
                   value: e,
                   child: Text(
                     e,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF333333),
+                      color: scheme.onSurface,
                     ),
                   ),
                 ),
@@ -326,6 +341,7 @@ class _NewEventScreenState extends State<NewEventScreen> {
   }
 
   Widget _buildLabelDropdown() {
+    final scheme = Theme.of(context).colorScheme;
     final labels = <String>[
       'Ücretsiz',
       'Ücretli',
@@ -337,24 +353,25 @@ class _NewEventScreenState extends State<NewEventScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainer,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _selectedLabel,
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          dropdownColor: scheme.surfaceContainerLow,
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: scheme.onSurface),
           items: labels
               .map(
                 (e) => DropdownMenuItem<String>(
                   value: e,
                   child: Text(
                     e,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF333333),
+                      color: scheme.onSurface,
                     ),
                   ),
                 ),
@@ -372,6 +389,7 @@ class _NewEventScreenState extends State<NewEventScreen> {
   }
 
   Widget _buildImagePickerPlaceholder() {
+    final scheme = Theme.of(context).colorScheme;
     final name = _pickedFile?.name;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,9 +399,9 @@ class _NewEventScreenState extends State<NewEventScreen> {
           child: Container(
             height: 180,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: scheme.surfaceContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE0E0E0)),
+              border: Border.all(color: scheme.outlineVariant),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -392,7 +410,7 @@ class _NewEventScreenState extends State<NewEventScreen> {
                   _isPickingFile
                       ? Icons.hourglass_top
                       : Icons.add_a_photo_outlined,
-                  color: const Color(0xFF1E3A8A),
+                  color: scheme.primary,
                   size: 32,
                 ),
                 const SizedBox(height: 8),
@@ -401,21 +419,21 @@ class _NewEventScreenState extends State<NewEventScreen> {
                       ? 'Fotoğraf seçiliyor...'
                       : 'Cihazından bir fotoğraf seç',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF555555),
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
                 if (!_isPickingFile && name == null) ...[
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'veya',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF999999)),
+                    style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant.withValues(alpha: 0.6)),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Kamera ile çek',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF555555)),
+                    style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
                   ),
                 ],
                 if (name != null && name.isNotEmpty) ...[
@@ -427,10 +445,10 @@ class _NewEventScreenState extends State<NewEventScreen> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1E3A8A),
+                        color: scheme.primary,
                       ),
                     ),
                   ),
@@ -452,15 +470,16 @@ class _NewEventScreenState extends State<NewEventScreen> {
   }
 
   Widget _buildLabeledField({required String label, required Widget child}) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF333333),
+            color: scheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -473,25 +492,26 @@ class _NewEventScreenState extends State<NewEventScreen> {
     required String hintText,
     IconData? prefixIcon,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(color: Color(0xFF999999), fontSize: 13),
+      hintStyle: TextStyle(color: scheme.onSurfaceVariant.withValues(alpha: 0.6), fontSize: 13),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: scheme.surfaceContainer,
       prefixIcon: prefixIcon != null
-          ? Icon(prefixIcon, color: const Color(0xFF9CA3AF))
+          ? Icon(prefixIcon, color: scheme.onSurfaceVariant)
           : null,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        borderSide: BorderSide(color: scheme.outlineVariant),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        borderSide: BorderSide(color: scheme.outlineVariant),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
+        borderSide: BorderSide(color: scheme.primary, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     );
@@ -586,20 +606,14 @@ class _NewEventScreenState extends State<NewEventScreen> {
     final date = _dateController.text.trim();
     final time = _timeController.text.trim();
 
-    if (title.isEmpty ||
-        place.isEmpty ||
-        description.isEmpty ||
-        date.isEmpty ||
-        time.isEmpty) {
+    if (title.isEmpty || place.isEmpty || description.isEmpty || date.isEmpty || time.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lütfen tüm zorunlu alanları doldurun.')),
       );
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    setState(() => _isSubmitting = true);
 
     try {
       String? imageUrl;
@@ -610,39 +624,69 @@ class _NewEventScreenState extends State<NewEventScreen> {
         if (imageUrl == null) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Fotoğraf yüklenemedi. Daha küçük bir fotoğraf deneyin.',
-              ),
-            ),
+            const SnackBar(content: Text('Fotoğraf yüklenemedi. Daha küçük bir fotoğraf deneyin.')),
           );
           return;
         }
         imageName = _pickedFile!.name;
       }
 
-      await FirebaseFirestore.instance.collection('events').add({
-        'title': title,
-        'place': place,
-        'description': description,
-        'date': date,
-        'time': time,
-        'category': _selectedCategory,
-        'label': _selectedLabel,
-        'imageUrl': imageUrl,
-        'imageName': imageName,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      if (_isEditMode) {
+        // Güncelleme modu
+        final updateData = <String, dynamic>{
+          'title': title,
+          'place': place,
+          'description': description,
+          'date': date,
+          'time': time,
+          'category': _selectedCategory,
+          'label': _selectedLabel,
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+        if (imageUrl != null) {
+          updateData['imageUrl'] = imageUrl;
+          updateData['imageName'] = imageName;
+        }
+        await FirebaseFirestore.instance
+            .collection('events')
+            .doc(widget.editEventId)
+            .update(updateData);
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Etkinlik başarıyla eklendi!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Etkinlik başarıyla güncellendi!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      } else {
+        // Yeni ekleme modu
+        await FirebaseFirestore.instance.collection('events').add({
+          'title': title,
+          'place': place,
+          'description': description,
+          'date': date,
+          'time': time,
+          'category': _selectedCategory,
+          'label': _selectedLabel,
+          'imageUrl': imageUrl,
+          'imageName': imageName,
+          'createdBy': FirebaseAuth.instance.currentUser?.uid ?? '',
+          'createdByEmail': FirebaseAuth.instance.currentUser?.email ?? '',
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Etkinlik başarıyla eklendi!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

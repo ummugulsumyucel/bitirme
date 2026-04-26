@@ -58,7 +58,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 800;
-
     return Scaffold(
       body: isSmallScreen ? _buildMobileLayout() : _buildDesktopLayout(),
     );
@@ -68,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
     final scheme = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       child: Container(
-        color: scheme.surface,
+        color: scheme.surface, // Tema arka planı
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
@@ -79,13 +78,46 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 40),
               // Logo
               Center(
-                child: Image.asset(
-                  'assets/images/logo1.png',
-                  width: 200,
-                  height: 200,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: scheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.menu_book,
+                    color: Colors.lightBlue,
+                    size: 50,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: scheme.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Column(
+                  children: [
+                    Text(
+                      'KLU UNICONNECT',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    Text(
+                      '2025 - 2026',
+                      style: TextStyle(fontSize: 12, color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 12),
               const SizedBox(height: 28),
               _buildEmailField(),
@@ -112,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
         Expanded(
           flex: 3,
           child: Container(
-            color: scheme.surface,
+            color: scheme.surface, // Tema arka planı
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(40),
@@ -124,13 +156,46 @@ class _LoginPageState extends State<LoginPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Logo
-                        Image.asset(
-                          'assets/images/logo1.png',
-                          width: 150,
-                          height: 150,
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: scheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.menu_book,
+                            color: Colors.lightBlue,
+                            size: 60,
+                          ),
                         ),
                         const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: scheme.primary,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Column(
+                            children: [
+                              Text(
+                                'KLU UNICONNECT',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                '2025 - 2026',
+                                style: TextStyle(fontSize: 14, color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
                         const SizedBox(height: 12),
                         const SizedBox(height: 36),
                         _buildEmailField(),
@@ -159,8 +224,8 @@ class _LoginPageState extends State<LoginPage> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  scheme.primaryContainer.withValues(alpha: 0.5),
-                  scheme.secondaryContainer.withValues(alpha: 0.45),
+                  scheme.primaryContainer,
+                  scheme.secondaryContainer,
                 ],
               ),
             ),
@@ -171,19 +236,53 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
+                      'BACK TO',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: scheme.primary,
+                      ),
+                    ),
+                    Text(
+                      'KAMPÜS',
+                      style: TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: scheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
                       'BAĞLAN, PAYLAŞ, KEŞFET!',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
                         color: scheme.primary,
                       ),
                     ),
                     const SizedBox(height: 40),
-                    Image.asset(
-                      'assets/images/logo1.png',
-                      width: 200,
-                      height: 200,
+                    Text(
+                      'KLU UNICONNECT',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: scheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 60),
+                    Container(
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        color: scheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.school,
+                        size: 80,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
@@ -195,17 +294,34 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  Widget _firebaseAuthCaption() {
+    final scheme = Theme.of(context).colorScheme;
+    return Text(
+      'Giriş Firebase Authentication ile yapılır; yalnızca kayıt olduğunuz '
+      'e-posta ve şifre kabul edilir.',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 12,
+        height: 1.4,
+        color: scheme.onSurfaceVariant,
+      ),
+    );
+  }
+
   Widget _buildEmailField() {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(30),
         border: Border.all(color: scheme.outlineVariant),
       ),
       child: TextFormField(
         controller: _emailController,
+        style: TextStyle(color: scheme.onSurface),
         decoration: InputDecoration(
           hintText: 'E-mail Adresinizi Girin',
+          hintStyle: TextStyle(color: scheme.onSurfaceVariant),
           prefixIcon: Icon(Icons.person, color: scheme.primary),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
@@ -215,12 +331,8 @@ class _LoginPageState extends State<LoginPage> {
         ),
         keyboardType: TextInputType.emailAddress,
         validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Lütfen e-posta adresinizi girin';
-          }
-          if (!value.contains('@')) {
-            return 'Geçerli bir e-posta adresi girin';
-          }
+          if (value == null || value.isEmpty) return 'Lütfen e-posta adresinizi girin';
+          if (!value.contains('@')) return 'Geçerli bir e-posta adresi girin';
           return null;
         },
       ),
@@ -231,23 +343,23 @@ class _LoginPageState extends State<LoginPage> {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(30),
         border: Border.all(color: scheme.outlineVariant),
       ),
       child: TextFormField(
         controller: _passwordController,
+        style: TextStyle(color: scheme.onSurface),
         decoration: InputDecoration(
           hintText: 'Şifrenizi Giriniz',
-          prefixIcon: Icon(Icons.lock, color: scheme.primary),
+          hintStyle: TextStyle(color: scheme.onSurfaceVariant),
+          prefixIcon: const Icon(Icons.lock, color: Colors.orange),
           suffixIcon: IconButton(
             icon: Icon(
               _obscurePassword ? Icons.visibility : Icons.visibility_off,
+              color: scheme.onSurfaceVariant,
             ),
-            onPressed: () {
-              setState(() {
-                _obscurePassword = !_obscurePassword;
-              });
-            },
+            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
@@ -257,12 +369,8 @@ class _LoginPageState extends State<LoginPage> {
         ),
         obscureText: _obscurePassword,
         validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Lütfen şifrenizi girin';
-          }
-          if (value.length < 8) {
-            return 'Şifre en az 8 karakter olmalıdır';
-          }
+          if (value == null || value.isEmpty) return 'Lütfen şifrenizi girin';
+          if (value.length < 8) return 'Şifre en az 8 karakter olmalıdır';
           return null;
         },
       ),
@@ -270,6 +378,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildRememberAndForgot() {
+    final scheme = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -277,20 +386,17 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             Checkbox(
               value: _rememberMe,
-              onChanged: (value) {
-                setState(() {
-                  _rememberMe = value ?? false;
-                });
-              },
+              activeColor: scheme.primary,
+              onChanged: (value) => setState(() => _rememberMe = value ?? false),
             ),
-            const Text('Beni Hatırla'),
+            Text('Beni Hatırla', style: TextStyle(color: scheme.onSurface)),
           ],
         ),
         TextButton(
           onPressed: (_loggingIn || _sendingReset) ? null : _onForgotPassword,
           child: Text(
             _sendingReset ? 'Gönderiliyor…' : 'Şifremi Unuttum?',
-            style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            style: TextStyle(color: scheme.primary),
           ),
         ),
       ],
@@ -298,6 +404,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildLoginButton() {
+    final scheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -328,21 +435,16 @@ class _LoginPageState extends State<LoginPage> {
                 }
               },
         style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.secondary,
+          backgroundColor: scheme.primary,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         ),
         child: _loggingIn
             ? const SizedBox(
                 height: 22,
                 width: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               )
             : const Text(
                 'Giriş Yap',
@@ -358,45 +460,9 @@ class _LoginPageState extends State<LoginPage> {
 
     // E-posta boşsa dialog aç
     if (email.isEmpty || !email.contains('@')) {
-      final controller = TextEditingController(text: email);
-      final result = await showDialog<String>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Şifre Sıfırlama'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Kayıtlı e-posta adresinizi girin. Şifre sıfırlama bağlantısı gönderilecek.',
-                style: TextStyle(fontSize: 13),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.emailAddress,
-                autofocus: true,
-                decoration: InputDecoration(
-                  labelText: 'E-posta',
-                  hintText: 'ornek@universite.edu.tr',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  prefixIcon: const Icon(Icons.email_outlined),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('İptal'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-              child: const Text('Gönder'),
-            ),
-          ],
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Şifre sıfırlama için önce geçerli e-posta adresinizi yazın.'),
         ),
       );
       if (result == null || result.isEmpty || !result.contains('@')) return;
@@ -411,11 +477,7 @@ class _LoginPageState extends State<LoginPage> {
     if (err == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Şifre sıfırlama bağlantısı e-postanıza gönderildi. Spam klasörünü de kontrol edin.',
-          ),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 4),
+          content: Text('Şifre sıfırlama bağlantısı e-postanıza gönderildi.'),
         ),
       );
     } else {
@@ -424,10 +486,11 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildRegisterLink() {
+    final scheme = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text('Hesabınız Yok Mu? '),
+        Text('Hesabınız Yok Mu? ', style: TextStyle(color: scheme.onSurfaceVariant)),
         TextButton(
           onPressed: () {
             Navigator.push(
@@ -437,10 +500,7 @@ class _LoginPageState extends State<LoginPage> {
           },
           child: Text(
             'Hesap Oluşturun',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: scheme.primary, fontWeight: FontWeight.bold),
           ),
         ),
       ],

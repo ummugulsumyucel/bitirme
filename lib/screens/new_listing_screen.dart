@@ -49,13 +49,10 @@ class _NewListingScreenState extends State<NewListingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      drawer: CommonDrawer(
-        onToggleTheme: widget.onToggleTheme,
-        isDarkMode: widget.isDarkMode,
-        selectedPage: 'announcements',
-      ),
+      backgroundColor: scheme.surface,
+      drawer: _buildDrawer(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -66,27 +63,27 @@ class _NewListingScreenState extends State<NewListingScreen> {
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: scheme.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Yeni İlan Oluştur',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E3A8A),
+                          color: scheme.primary,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Kampüste kaybettiğin veya bulduğun eşyalar için hızlıca ilan oluştur. '
                         'Diğer öğrencilerle daha kolay iletişim kur.',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF666666),
+                          color: scheme.onSurfaceVariant,
                           height: 1.5,
                         ),
                       ),
@@ -140,7 +137,7 @@ class _NewListingScreenState extends State<NewListingScreen> {
                         width: double.infinity,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5A7FCF),
+                            backgroundColor: scheme.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -170,9 +167,10 @@ class _NewListingScreenState extends State<NewListingScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       height: 60,
-      color: const Color(0xFF1E3A8A),
+      color: scheme.primary,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -222,25 +220,18 @@ class _NewListingScreenState extends State<NewListingScreen> {
   }
 
   Widget _buildChip(String value) {
+    final scheme = Theme.of(context).colorScheme;
     final bool isSelected = _selectedType == value;
     return Expanded(
       child: InkWell(
-        onTap: () {
-          setState(() {
-            _selectedType = value;
-          });
-        },
+        onTap: () => setState(() => _selectedType = value),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected
-                ? const Color(0xFF1E3A8A)
-                : const Color(0xFFF1F5F9),
+            color: isSelected ? scheme.primary : scheme.surfaceContainer,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected
-                  ? const Color(0xFF1E3A8A)
-                  : const Color(0xFFE0E0E0),
+              color: isSelected ? scheme.primary : scheme.outlineVariant,
             ),
           ),
           child: Center(
@@ -249,7 +240,7 @@ class _NewListingScreenState extends State<NewListingScreen> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : const Color(0xFF1E3A8A),
+                color: isSelected ? Colors.white : scheme.primary,
               ),
             ),
           ),
@@ -259,6 +250,7 @@ class _NewListingScreenState extends State<NewListingScreen> {
   }
 
   Widget _buildCategoryDropdown() {
+    final scheme = Theme.of(context).colorScheme;
     final categories = <String>[
       'Genel',
       'Elektronik',
@@ -271,34 +263,30 @@ class _NewListingScreenState extends State<NewListingScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainer,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _selectedCategory,
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          dropdownColor: scheme.surfaceContainerLow,
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: scheme.onSurface),
           items: categories
               .map(
                 (e) => DropdownMenuItem<String>(
                   value: e,
                   child: Text(
                     e,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF333333),
-                    ),
+                    style: TextStyle(fontSize: 14, color: scheme.onSurface),
                   ),
                 ),
               )
               .toList(),
           onChanged: (value) {
             if (value == null) return;
-            setState(() {
-              _selectedCategory = value;
-            });
+            setState(() => _selectedCategory = value);
           },
         ),
       ),
@@ -306,6 +294,7 @@ class _NewListingScreenState extends State<NewListingScreen> {
   }
 
   Widget _buildImagePickerPlaceholder() {
+    final scheme = Theme.of(context).colorScheme;
     final name = _pickedFile?.name;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,30 +304,23 @@ class _NewListingScreenState extends State<NewListingScreen> {
           child: Container(
             height: 120,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: scheme.surfaceContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE0E0E0)),
+              border: Border.all(color: scheme.outlineVariant),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  _isPickingFile
-                      ? Icons.hourglass_top
-                      : Icons.add_a_photo_outlined,
-                  color: const Color(0xFF1E3A8A),
+                  _isPickingFile ? Icons.hourglass_top : Icons.add_a_photo_outlined,
+                  color: scheme.primary,
                   size: 28,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _isPickingFile
-                      ? 'Fotoğraf seçiliyor...'
-                      : 'Cihazından bir fotoğraf seç',
+                  _isPickingFile ? 'Fotoğraf seçiliyor...' : 'Cihazından bir fotoğraf seç',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF555555),
-                  ),
+                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
                 ),
                 if (name != null && name.isNotEmpty) ...[
                   const SizedBox(height: 6),
@@ -349,10 +331,10 @@ class _NewListingScreenState extends State<NewListingScreen> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1E3A8A),
+                        color: scheme.primary,
                       ),
                     ),
                   ),
@@ -363,9 +345,7 @@ class _NewListingScreenState extends State<NewListingScreen> {
         ),
         if (name != null && name.isNotEmpty)
           TextButton.icon(
-            onPressed: _isSubmitting
-                ? null
-                : () => setState(() => _pickedFile = null),
+            onPressed: _isSubmitting ? null : () => setState(() => _pickedFile = null),
             icon: const Icon(Icons.close, size: 18),
             label: const Text('Fotoğrafı kaldır'),
           ),
@@ -374,15 +354,16 @@ class _NewListingScreenState extends State<NewListingScreen> {
   }
 
   Widget _buildLabeledField({required String label, required Widget child}) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF333333),
+            color: scheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -391,29 +372,25 @@ class _NewListingScreenState extends State<NewListingScreen> {
     );
   }
 
-  InputDecoration _inputDecoration({
-    required String hintText,
-    IconData? prefixIcon,
-  }) {
+  InputDecoration _inputDecoration({required String hintText, IconData? prefixIcon}) {
+    final scheme = Theme.of(context).colorScheme;
     return InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(color: Color(0xFF999999), fontSize: 13),
+      hintStyle: TextStyle(color: scheme.onSurfaceVariant.withValues(alpha: 0.6), fontSize: 13),
       filled: true,
-      fillColor: Colors.white,
-      prefixIcon: prefixIcon != null
-          ? Icon(prefixIcon, color: const Color(0xFF9CA3AF))
-          : null,
+      fillColor: scheme.surfaceContainer,
+      prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: scheme.onSurfaceVariant) : null,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        borderSide: BorderSide(color: scheme.outlineVariant),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        borderSide: BorderSide(color: scheme.outlineVariant),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
+        borderSide: BorderSide(color: scheme.primary, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     );
