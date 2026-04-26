@@ -41,6 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    // Kullanıcı giriş durumunu kontrol et ve gerekli verileri yükle
     if (AuthService().isLoggedIn) {
       _bootstrap();
     } else {
