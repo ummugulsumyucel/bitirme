@@ -31,8 +31,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (uid == null) return;
 
       await SessionService.setUserDocId(uid);
-      final doc =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
       final d = doc.data();
       if (d != null && mounted) {
         _nameController.text = (d['fullName'] as String?) ?? '';
@@ -40,11 +42,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _classController.text = (d['grade'] as String?) ?? '';
         _emailController.text =
             (d['email'] as String?) ??
-                FirebaseAuth.instance.currentUser?.email ??
-                '';
+            FirebaseAuth.instance.currentUser?.email ??
+            '';
       } else if (mounted) {
-        _emailController.text =
-            FirebaseAuth.instance.currentUser?.email ?? '';
+        _emailController.text = FirebaseAuth.instance.currentUser?.email ?? '';
         _nameController.text =
             FirebaseAuth.instance.currentUser?.displayName ?? '';
       }
@@ -76,102 +77,107 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
                   : SingleChildScrollView(
-                child: Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Profil Bilgilerini Düzenle',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E3A8A),
-                        ),
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).viewInsets.bottom + 100,
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'İsmin, bölümün, sınıfın ve iletişim bilgilerin gibi temel profil bilgilerini güncelleyebilirsin.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF666666),
-                          height: 1.5,
+                      child: Container(
+                        margin: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildLabeledField(
-                        label: 'Ad Soyad',
-                        child: TextField(
-                          controller: _nameController,
-                          decoration: _inputDecoration(
-                            hintText: 'Adını ve soyadını gir',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildLabeledField(
-                        label: 'Bölüm',
-                        child: TextField(
-                          controller: _departmentController,
-                          decoration: _inputDecoration(
-                            hintText: 'Örn: Bilgisayar Mühendisliği',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildLabeledField(
-                        label: 'Sınıf',
-                        child: TextField(
-                          controller: _classController,
-                          decoration: _inputDecoration(
-                            hintText: 'Örn: 3. Sınıf',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildLabeledField(
-                        label: 'E-posta',
-                        child: TextField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: _inputDecoration(
-                            hintText: 'Okul e-posta adresin',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5A7FCF),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Profil Bilgilerini Düzenle',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E3A8A),
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          onPressed: _isSubmitting ? null : _saveProfile,
-                          child: Text(
-                            _isSubmitting
-                                ? 'Kaydediliyor...'
-                                : 'Degisiklikleri Kaydet',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
+                            const SizedBox(height: 8),
+                            const Text(
+                              'İsmin, bölümün, sınıfın ve iletişim bilgilerin gibi temel profil bilgilerini güncelleyebilirsin.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF666666),
+                                height: 1.5,
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 20),
+                            _buildLabeledField(
+                              label: 'Ad Soyad',
+                              child: TextField(
+                                controller: _nameController,
+                                decoration: _inputDecoration(
+                                  hintText: 'Adını ve soyadını gir',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildLabeledField(
+                              label: 'Bölüm',
+                              child: TextField(
+                                controller: _departmentController,
+                                decoration: _inputDecoration(
+                                  hintText: 'Örn: Bilgisayar Mühendisliği',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildLabeledField(
+                              label: 'Sınıf',
+                              child: TextField(
+                                controller: _classController,
+                                decoration: _inputDecoration(
+                                  hintText: 'Örn: 3. Sınıf',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildLabeledField(
+                              label: 'E-posta',
+                              child: TextField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: _inputDecoration(
+                                  hintText: 'Okul e-posta adresin',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF5A7FCF),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                ),
+                                onPressed: _isSubmitting ? null : _saveProfile,
+                                child: Text(
+                                  _isSubmitting
+                                      ? 'Kaydediliyor...'
+                                      : 'Degisiklikleri Kaydet',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
+                    ),
             ),
           ],
         ),
@@ -204,10 +210,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           Row(
             children: [
               IconButton(
-                icon: const Icon(
-                  Icons.dark_mode_outlined,
-                  color: Colors.white,
-                ),
+                icon: const Icon(Icons.dark_mode_outlined, color: Colors.white),
                 onPressed: () {},
               ),
               IconButton(
@@ -221,10 +224,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildLabeledField({
-    required String label,
-    required Widget child,
-  }) {
+  Widget _buildLabeledField({required String label, required Widget child}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -242,15 +242,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  InputDecoration _inputDecoration({
-    required String hintText,
-  }) {
+  InputDecoration _inputDecoration({required String hintText}) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(
-        color: Color(0xFF999999),
-        fontSize: 13,
-      ),
+      hintStyle: const TextStyle(color: Color(0xFF999999), fontSize: 13),
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(
@@ -263,15 +258,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(
-          color: Color(0xFF1E3A8A),
-          width: 2,
-        ),
+        borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
       ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 12,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     );
   }
 
@@ -281,7 +270,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final grade = _classController.text.trim();
     final email = _emailController.text.trim().toLowerCase();
 
-    if (fullName.isEmpty || department.isEmpty || grade.isEmpty || email.isEmpty) {
+    if (fullName.isEmpty ||
+        department.isEmpty ||
+        grade.isEmpty ||
+        email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lutfen tum alanlari doldurun.')),
       );
@@ -336,5 +328,3 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 }
-
-

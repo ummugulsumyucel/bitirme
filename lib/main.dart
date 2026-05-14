@@ -87,6 +87,18 @@ class _MyAppState extends State<MyApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      // Overflow hatalarını önlemek için builder ekle
+      builder: (context, child) {
+        return MediaQuery(
+          // Text scale factor'ü sınırla (çok büyük yazılar overflow'a neden olabilir)
+          data: MediaQuery.of(context).copyWith(
+            textScaler: MediaQuery.of(
+              context,
+            ).textScaler.clamp(minScaleFactor: 0.8, maxScaleFactor: 1.3),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: MainShell(themeMode: _themeMode, onToggleTheme: _toggleTheme),
     );
   }

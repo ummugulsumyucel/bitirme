@@ -30,9 +30,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   // Hızlı soru önerileri
   static const _quickReplies = [
     '📅 Bu hafta etkinlik var mı?',
-    '🍽️ Bugün ne yemek var?',
+    '🎓 Erasmus başvurusu nasıl yapılır?',
+    '🏛️ Dekanlar kimler?',
     '📚 Not nasıl paylaşırım?',
-    '🔍 Kayıp eşya nasıl bildiririm?',
+    '🏫 KLU\'de kaç fakülte var?',
+    '📞 KLU iletişim bilgileri',
   ];
 
   @override
@@ -112,6 +114,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -161,8 +164,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             ),
           ),
 
-          // Input alanı
-          _buildInputBar(scheme),
+          // Input alanı - klavye açıkken yukarı çık
+          Padding(
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: _buildInputBar(scheme),
+          ),
         ],
       ),
     );
@@ -218,7 +224,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Gemini AI · Çevrimiçi',
+                      'UniConnect · Çevrimiçi',
                       style: TextStyle(
                         fontSize: 11,
                         color: scheme.onSurfaceVariant,

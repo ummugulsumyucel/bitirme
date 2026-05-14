@@ -84,6 +84,7 @@ dependencies:
   device_info_plus: ^9.1.0     # Device information
   package_info_plus: ^4.2.0    # App information
   path_provider: ^2.1.1        # File system paths
+  open_file: ^3.5.10           # Open files with default apps
 
 dev_dependencies:
   flutter_test:
@@ -119,6 +120,7 @@ flutter:
   # Uygulamada kullanacağımız görseller için assets klasörü
   assets:
     - assets/images/
+    - assets/data/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

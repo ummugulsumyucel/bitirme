@@ -671,10 +671,36 @@ class HomePage extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           debugPrint('Haber tıklandı: ${news.title}');
           debugPrint('URL: ${news.url}');
-          _openClubUrl(context, news.url);
+
+          // Direkt okulun web sitesindeki habere yönlendir
+          final uri = Uri.parse(news.url);
+          try {
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            } else {
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Haber açılamadı. Lütfen daha sonra tekrar deneyin.',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          } catch (e) {
+            debugPrint('URL açma hatası: $e');
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Hata: ${e.toString()}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -1116,39 +1142,53 @@ class _AnnouncementBannerSlider extends StatefulWidget {
 }
 
 class _AnnouncementBannerSliderState extends State<_AnnouncementBannerSlider> {
-  final PageController _pageController = PageController();
+  final PageController _pageController = PageController(viewportFraction: 0.88);
   int _currentPage = 0;
   Timer? _timer;
 
-  // Varsayılan banner verileri (Firestore'dan veri gelmezse kullanılır)
+  // Uygulama özelliklerini tanıtan banner verileri
   static const List<_BannerItem> _defaultBanners = [
     _BannerItem(
-      title: 'Kampüs Etkinliklerine Katıl!',
-      subtitle: 'Seminer, konser ve atölye çalışmalarını kaçırma.',
+      title: 'AI Asistan',
+      subtitle: 'Kampüs sorularını yapay zeka ile anında yanıtla.',
+      icon: Icons.smart_toy_rounded,
+      gradientStart: Color(0xFF6366F1),
+      gradientEnd: Color(0xFF8B5CF6),
+    ),
+    _BannerItem(
+      title: 'Etkinlikler',
+      subtitle: 'Kampüsteki tüm etkinlikleri takip et ve katıl.',
       icon: Icons.event_rounded,
       gradientStart: Color(0xFF1E3A8A),
       gradientEnd: Color(0xFF3B82F6),
     ),
     _BannerItem(
-      title: 'Yeni Duyurular',
-      subtitle: 'Akademik takvim ve önemli tarihler için takipte kal.',
-      icon: Icons.campaign_rounded,
-      gradientStart: Color(0xFF6366F1),
-      gradientEnd: Color(0xFF8B5CF6),
+      title: 'Yemek Menüsü',
+      subtitle: 'Günlük yemekhane menüsünü anında görüntüle.',
+      icon: Icons.restaurant_rounded,
+      gradientStart: Color(0xFF10B981),
+      gradientEnd: Color(0xFF059669),
     ),
     _BannerItem(
-      title: 'Kulüplere Katıl',
-      subtitle: 'Kampüs kulüpleriyle sosyal hayatını zenginleştir.',
-      icon: Icons.groups_rounded,
+      title: 'Duyurular',
+      subtitle: 'Üniversite duyurularını ve haberleri kaçırma.',
+      icon: Icons.campaign_rounded,
       gradientStart: Color(0xFF0EA5E9),
       gradientEnd: Color(0xFF06B6D4),
     ),
     _BannerItem(
-      title: 'Kayıp & Bulunan',
-      subtitle: 'Eşyalarını bul veya bulduklarını paylaş.',
-      icon: Icons.search_rounded,
-      gradientStart: Color(0xFF10B981),
-      gradientEnd: Color(0xFF059669),
+      title: 'Not Paylaşımı',
+      subtitle: 'Ders notlarını paylaş, arkadaşlarınkini keşfet.',
+      icon: Icons.note_alt_rounded,
+      gradientStart: Color(0xFFD97706),
+      gradientEnd: Color(0xFFF59E0B),
+    ),
+    _BannerItem(
+      title: 'İkinci El İlanlar',
+      subtitle: 'Kampüste al, sat ve takas yap.',
+      icon: Icons.storefront_rounded,
+      gradientStart: Color(0xFFDC2626),
+      gradientEnd: Color(0xFFEF4444),
     ),
   ];
 

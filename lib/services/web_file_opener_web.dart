@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 /// Web'de dosyayı yeni sekmede açar (base64 data URL veya https URL)
-void openFileInBrowser(String url, {String? fileName}) {
+Future<void> openFileInBrowser(String url, {String? fileName}) async {
   if (url.startsWith('data:')) {
     final commaIndex = url.indexOf(',');
     if (commaIndex == -1) return;
@@ -29,7 +29,7 @@ void openFileInBrowser(String url, {String? fileName}) {
 }
 
 /// Web'de dosyayı indirir
-void downloadFileInBrowser(String url, {String? fileName}) {
+Future<void> downloadFileInBrowser(String url, {String? fileName}) async {
   if (url.startsWith('data:')) {
     final commaIndex = url.indexOf(',');
     if (commaIndex == -1) return;

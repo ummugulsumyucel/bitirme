@@ -501,12 +501,16 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                         size: 18,
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        announcement.author,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: announcement.iconColor,
+                      Flexible(
+                        child: Text(
+                          announcement.author,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: announcement.iconColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const Spacer(),
@@ -526,6 +530,8 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                             fontWeight: FontWeight.w600,
                             color: announcement.iconColor,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -538,6 +544,8 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                       fontWeight: FontWeight.bold,
                       color: scheme.onSurface,
                     ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -567,9 +575,13 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                         color: scheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        dateFormat.format(announcement.date),
-                        style: TextStyle(color: scheme.onSurface),
+                      Flexible(
+                        child: Text(
+                          dateFormat.format(announcement.date),
+                          style: TextStyle(color: scheme.onSurface),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
